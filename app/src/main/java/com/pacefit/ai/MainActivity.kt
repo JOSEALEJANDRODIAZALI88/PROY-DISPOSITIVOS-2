@@ -14,7 +14,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val app = application as PaceFitApplication
-            val profile: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(app.healthRepository))
+            val profile: ProfileViewModel = viewModel(factory = ProfileViewModel.Factory(app.healthRepository, app.database.modulesDao()))
             PaceFitRoot(profile)
         }
     }

@@ -35,6 +35,20 @@ class HealthDatabaseTest {
         assertNull(dao.observe().first())
     }
 
+    @Test fun storesParametersAndDailyWaterLogs() = runBlocking {
+        val dao = database.modulesDao()
+        val parameter = PaceParameterEntity("water_base", "Agua base", 35.0, "ml/kg/día", "Supuesto", "PROVISIONAL", 100)
+        dao.saveParameter(parameter)
+        assertEquals(parameter, dao.observeParameters().first().single())
+        dao.addWaterLog(WaterLogEntity(milliliters = 300, loggedAt = 150))
+        dao.addWaterLog(WaterLogEntity(milliliters = 250, loggedAt = 200))
+        val logs = dao.observeWaterLogs(100, 300).first()
+        assertEquals(2, logs.size)
+        assertEquals(550, logs.sumOf { it.milliliters })
+        dao.deleteParameter("water_base")
+        assertTrue(dao.observeParameters().first().isEmpty())
+    }
+
     @Test fun diskDatabasePersistsAfterReopening() = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val name = "profile-persistence-test.db"

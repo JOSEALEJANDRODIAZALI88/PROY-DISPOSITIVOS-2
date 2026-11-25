@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.pacefit.ai.data.HealthRepository
+import com.pacefit.ai.data.PaceFitModulesDao
 import com.pacefit.ai.domain.HealthProfile
 import com.pacefit.ai.domain.ProfileDraft
 import com.pacefit.ai.domain.ProfileValidator
@@ -23,7 +24,7 @@ data class ProfileUiState(
     val storageError: Boolean = false,
 )
 
-class ProfileViewModel(private val repository: HealthRepository) : ViewModel() {
+class ProfileViewModel(private val repository: HealthRepository, val modulesDao: PaceFitModulesDao? = null) : ViewModel() {
     private val mutableState = MutableStateFlow(ProfileUiState())
     val state = mutableState.asStateFlow()
 
@@ -91,11 +92,11 @@ class ProfileViewModel(private val repository: HealthRepository) : ViewModel() {
         }
     }
 
-    class Factory(private val repository: HealthRepository) : ViewModelProvider.Factory {
+    class Factory(private val repository: HealthRepository, private val modulesDao: PaceFitModulesDao? = null) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(ProfileViewModel::class.java))
-            return ProfileViewModel(repository) as T
+            return ProfileViewModel(repository, modulesDao) as T
         }
     }
 }

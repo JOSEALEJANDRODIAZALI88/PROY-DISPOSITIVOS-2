@@ -7,6 +7,8 @@ import androidx.room.PrimaryKey
 import androidx.room.Query
 import androidx.room.RoomDatabase
 import androidx.room.Upsert
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import com.pacefit.ai.domain.HealthProfile
 import com.pacefit.ai.domain.ProfileSex
 import kotlinx.coroutines.flow.Flow
@@ -34,9 +36,49 @@ interface HealthProfileDao {
     suspend fun delete()
 }
 
-@Database(entities = [HealthProfileEntity::class], version = 1, exportSchema = true)
+@Entity(tableName = "pace_parameters")
+data class PaceParameterEntity(
+    @PrimaryKey val key: String,
+    val label: String,
+    val value: Double,
+    val unit: String,
+    val source: String,
+    val status: String,
+    val updatedAt: Long,
+)
+
+@Entity(tableName = "water_logs")
+data class WaterLogEntity(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val milliliters: Int,
+    val loggedAt: Long,
+)
+
+@Dao
+interface PaceFitModulesDao {
+    @Query("SELECT * FROM pace_parameters ORDER BY label")
+    fun observeParameters(): Flow<List<PaceParameterEntity>>
+
+    @Upsert
+    suspend fun saveParameter(parameter: PaceParameterEntity)
+
+    @Query("DELETE FROM pace_parameters WHERE `key` = :key")
+    suspend fun deleteParameter(key: String)
+
+    @Query("SELECT * FROM water_logs WHERE loggedAt >= :start AND loggedAt < :end ORDER BY loggedAt DESC")
+    fun observeWaterLogs(start: Long, end: Long): Flow<List<WaterLogEntity>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun addWaterLog(log: WaterLogEntity)
+
+    @Query("DELETE FROM water_logs WHERE id = :id")
+    suspend fun deleteWaterLog(id: Long)
+}
+
+@Database(entities = [HealthProfileEntity::class, PaceParameterEntity::class, WaterLogEntity::class], version = 2, exportSchema = true)
 abstract class HealthDatabase : RoomDatabase() {
     abstract fun profileDao(): HealthProfileDao
+    abstract fun modulesDao(): PaceFitModulesDao
 }
 
 interface HealthRepository {

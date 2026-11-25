@@ -82,11 +82,11 @@ fun PaceFitRoot(viewModel: ProfileViewModel) {
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 NavigationBar(containerColor = Palette.surface) {
-                    listOf("Inicio", "Mi perfil", "Próximos tickets").forEachIndexed { index, label ->
+                    listOf("Inicio", "Mi perfil", "Tickets", "Integrante 3").forEachIndexed { index, label ->
                         NavigationBarItem(
                             selected = tab == index,
                             onClick = { tab = index },
-                            icon = { Text(listOf("01", "02", "03")[index], fontWeight = FontWeight.Bold) },
+                            icon = { Text(listOf("01", "02", "03", "04")[index], fontWeight = FontWeight.Bold) },
                             label = { Text(label) },
                         )
                     }
@@ -96,7 +96,8 @@ fun PaceFitRoot(viewModel: ProfileViewModel) {
             when (tab) {
                 0 -> Home(state, padding) { tab = 1 }
                 1 -> ProfileEditor(state, viewModel, padding)
-                else -> Roadmap(padding)
+                2 -> Roadmap(padding)
+                else -> Integrante3Screen(requireNotNull(viewModel.modulesDao), state.profile, padding)
             }
         }
     }
