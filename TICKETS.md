@@ -5,14 +5,18 @@ Fuente: `recursos/PaceFit_AI_informe_final_Kanban.docx`.
 ## Acuerdo de entrega
 
 La primera entrega fue **PF-001**. El alcance posterior autorizado es únicamente
-**Integrante 4: PF-001, PF-007, PF-011 y PF-015**, adaptado a SQLite persistente y directorios privados.
-Los requisitos remotos originales y las dependencias de otros integrantes se conservan pendientes.
+**Integrante 4: PF-001, PF-007, PF-011 y PF-015**. Tras la edición local, el usuario autorizó
+rediseño integral y requisitos originales, ampliando **solo las dependencias necesarias PF-003/010/012**.
+SQLite/directorios privados se conservan. El resto del backlog no se inicia.
 La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 
 - Rama de la primera entrega: `primera-version`.
 - Rama del alcance local del Integrante 4 (Díaz): `integrante-4-diaz`.
 - Versión inicial: `0.1.0-beta.1`.
 - Edición local implementada: `0.2.0-local.1`; no equivale al cierre de los tickets originales.
+- Integración/rediseño actual: `0.3.0-beta.1`; Supabase Free desplegado y 27 comprobaciones HTTPS
+  cloud aprobadas. SMTP Gmail guardado; confirmación OTP probada en Android 8/15. Entrega de correo,
+  inferencia Gemini y aceptación física siguen pendientes.
 - Estados: Backlog → To Do → Análisis → Desarrollo → Testing → Despliegue → Done.
 - Límites: To Do 5; Análisis 2; Desarrollo 3; Testing 2; Despliegue 1. WIP activo máximo 8.
 - No mover a Done sin criterios verificados y evidencia. Una prueba escrita no equivale a una prueba ejecutada.
@@ -25,19 +29,19 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 |---|---|---|---|---|
 | PF-001 | Base Android y perfil de salud local | RF01; B01 y parte de B02 | — | Testing; evidencia actual en docs/VERIFICACION.md |
 | PF-002 | Catálogo de parámetros y fuentes | T01; RNF13 | — | Backlog |
-| PF-003 | Registro de actividad y sensores | RF02; B02/B03/B04 | PF-001 | Backlog |
+| PF-003 | Registro de actividad y sensores | RF02; B02/B03/B04 | PF-001 | Dependencia implementada; FGS probado con GPS simulado, campo pendiente |
 | PF-004 | Pendiente y esfuerzo | RF03; B05 | PF-002/003 | Backlog |
 | PF-005 | Altitud, agua, UV y resumen diario | RF04; B06/B07 parcial | PF-002/003/004 | Backlog |
 | PF-006 | Pulso mediante BLE | RF05; B08 | PF-003 | Backlog |
-| PF-007 | Detección de transporte | RF06; B11 | PF-003 | Parcial local: detector visible; integración y campo pendientes |
+| PF-007 | Detección de transporte | RF06; B11 | PF-003 | Integrado con sesiones/rutas; validación de campo pendiente |
 | PF-008 | Alimentos locales y comidas | RF07; B10 | PF-001/002 | Backlog |
 | PF-009 | Comida por fotografía | RF07; B12 | PF-008/012 | Backlog |
-| PF-010 | Cuenta y perfil social | RF16; B20 parcial | PF-001 | Backlog |
-| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | Adaptación de borrado local; aceptación remota pendiente |
-| PF-012 | Gateway de IA y asesor semanal | RF08; B07 | PF-005/010/011 | Backlog |
+| PF-010 | Cuenta y perfil social | RF16; B20 parcial | PF-001 | Auth/perfil y OTP probados contra cloud en Android 8/15; SMTP guardado, entrega real pendiente |
+| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | SQL/RLS/Storage/cascada probados local y cloud; aceptación operativa/backups pendientes |
+| PF-012 | Gateway de IA y asesor semanal | RF08; B07 | PF-005/010/011 | Solo tarea photo/cuota para PF-015; inferencia real pendiente, resto Backlog |
 | PF-013 | Corredores, solicitudes, chat y bloqueo | RF13; B17 | PF-003/010/011/012 | Backlog |
 | PF-014 | Zonas y competencia semanal | RF12; B16 | PF-003/010/011 | Backlog |
-| PF-015 | Plogging y reportes urbanos | RF14; B18 | PF-010/011/012 | Parcial local; mapa, IA, Storage y servidor pendientes |
+| PF-015 | Plogging y reportes urbanos | RF14; B18 | PF-010/011/012 | Flujo guiado implementado y backend cloud probado; Gemini/fotos reales pendientes |
 | PF-016 | Reporte PDF sin internet | RF11; B09 | PF-003/005/008 | Backlog |
 | PF-017 | Aclimatación orientativa | RF09; B13 | PF-001/002 | Backlog, opcional en informe |
 | PF-018 | Ruta de menor esfuerzo | RF10; B14 | PF-003/004 | Backlog, opcional en informe |
@@ -47,7 +51,7 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 Los opcionales permanecen en el backlog porque se solicitó cubrir el documento completo,
 pero no forman parte del primer ticket.
 
-### Adaptación local autorizada
+### Histórico: adaptación local `0.2.0-local.1`
 
 - PF-001: conservar CRUD, perfil único y borradores; migrar SQLite 1→2 sin pérdida.
 - PF-007: GPS preciso y pasos opcionales mientras la pantalla está visible, actividad indicada por el usuario,
@@ -67,6 +71,33 @@ Verificación del 24/11/2026: APK compilada e instalada en emulador API 35,
 32 pruebas unitarias y 14 instrumentadas sin fallos; Lint con 0 errores y 14 advertencias.
 Esto no cierra los requisitos remotos, la aceptación manual completa ni las pruebas de campo.
 
+### Integración autorizada `0.3.0-beta.1` — 25/11/2026
+
+- Cuatro secciones Inicio/Actividad/Ciudad/Perfil, iconos semánticos, navegación secundaria atrás.
+  Perfil, cuenta y datos separados; foto con vista previa y alta guiada, borradores independientes.
+- PF-003/007: servicio FGS con notificación, inicio/pausa/continuación/finalización, puntos/sesiones
+  persistentes, pasos/barómetro opcionales, mapa e historial. Clasificación conservadora, vehículos
+  y desconocidos retenidos/excluidos de metros deportivos. La actividad es indicada por el usuario,
+  no por un servicio de reconocimiento automático. No se inventan calorías ni zonas.
+- PF-010/011: Auth real y sesión cifrada en Android; RLS/Storage privado/RPC restringidas, puntos
+  generados en SQL, cuota atómica, borrado de cuenta con recibo recuperable y purga local.
+- PF-015/PF-012 photo: publicación explícita, mapa solo autenticado, foto sin EXIF, clasificación
+  manual o sugerencia corregible de Gemini; el servidor no acepta puntos del cliente.
+- Backend local: 34 pruebas SQL y 27 comprobaciones HTTP reales con tres cuentas, incluida concurrencia de cuota
+  (45 peticiones → exactamente 40 aceptadas), almacenamiento privado y borrado en cascada.
+  Supabase Free desplegado: cuatro migraciones, cuatro Edge Functions y 27 comprobaciones HTTPS aprobadas.
+  Android: 32 unitarias y 24 instrumentadas aprobadas en cada API 26 y 35 con conexión real a cloud;
+  Lint 0 errores/17 advertencias. Instalación y apertura comprobadas en ambas API.
+  Evidencia vigente en `docs/VERIFICACION.md`.
+- SMTP Gmail configurado y plantilla OTP desplegada, manteniendo confirmación obligatoria.
+  La prueba Android rechaza un OTP incorrecto y verifica uno de Auth, sin enviar correo.
+  Todavía no se ha desplegado una clave Gemini según la última consulta. No se afirma entrega real de correo,
+  inferencia real, retención de backups operativa ni pruebas de campo.
+  Las cuentas de estas pruebas usan códigos generados por administración y verificados por el cliente,
+  no códigos recibidos en Gmail.
+  No se cambia ningún ticket a Done.
+- Las dependencias no equivalen a completar el resto de PF-012 ni reasignar todo el trabajo del equipo.
+
 ## PF-001 — Base Android y perfil de salud local
 
 **Prioridad:** alta. **Entrega:** Android 8.0+; Kotlin, Compose, Room, ViewModel y StateFlow.
@@ -74,11 +105,12 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 ### Alcance
 
 - Proyecto Android con wrapper y comandos reproducibles.
-- Inicio, edición del perfil y pantalla informativa de próximos tickets.
+- Inicio, editor de salud y navegación integrada sin presentar el backlog como funcionalidades.
 - Perfil único local con peso, estatura, edad, sexo opcional y fecha de actualización.
 - Crear, consultar, modificar y eliminar con confirmación.
 - Validación sin cierres inesperados; soporte de coma o punto decimal.
-- Datos en almacenamiento privado; sin Internet, autenticación, analítica ni permisos sensibles.
+- Perfil en almacenamiento privado, sin requerir cuenta, Internet ni permisos para usarlo.
+  La integración añade Internet/cuenta y permisos opcionales únicamente a sus propios módulos.
 - Exclusión explícita de copias de seguridad y transferencias Android.
 
 ### Criterios de aceptación
@@ -90,7 +122,8 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 5. Campos vacíos, números no finitos y valores fuera de los límites muestran errores.
 6. Cambiar de pestaña o rotar no pierde un formulario durante la vida del proceso.
 7. Eliminar requiere confirmación y deja el perfil vacío tras reabrir.
-8. El manifiesto no solicita Internet ni permisos sensibles. No se registran valores de salud en logs.
+8. El perfil no exige Internet, cuenta ni permisos; no se registran valores de salud en logs.
+   El manifiesto integrado declara Internet/FGS y permisos GPS/pasos/notificaciones por sus módulos autorizados.
 9. La interfaz y README identifican como pendientes las funciones fuera de este ticket.
 
 Los límites de entrada (peso 10–400 kg, estatura 50–250 cm y edad 1–120 años)

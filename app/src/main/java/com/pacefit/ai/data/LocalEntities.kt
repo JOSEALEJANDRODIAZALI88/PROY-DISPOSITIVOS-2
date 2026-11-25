@@ -52,17 +52,19 @@ data class LocalSettingsEntity(
 
 @Dao
 interface LocalDao {
-    @Query("SELECT * FROM transport_segments ORDER BY startedAt DESC LIMIT 200")
+    @Query("SELECT * FROM transport_segments ORDER BY startedAt DESC")
     fun observeSegments(): Flow<List<TransportSegmentEntity>>
 
-    @Query("SELECT * FROM plogging_entries ORDER BY createdAt DESC LIMIT 200")
+    @Query("SELECT * FROM plogging_entries ORDER BY createdAt DESC")
     fun observePlogging(): Flow<List<PloggingEntity>>
 
-    @Query("SELECT * FROM urban_reports ORDER BY createdAt DESC LIMIT 200")
+    @Query("SELECT * FROM urban_reports ORDER BY createdAt DESC")
     fun observeReports(): Flow<List<UrbanReportEntity>>
 
     @Query("SELECT * FROM local_settings WHERE id = 1")
     suspend fun settings(): LocalSettingsEntity?
+    @Query("SELECT * FROM plogging_entries WHERE id = :id") suspend fun findPlogging(id: String): PloggingEntity?
+    @Query("SELECT * FROM urban_reports WHERE id = :id") suspend fun findReport(id: String): UrbanReportEntity?
 
     @Upsert suspend fun saveSettings(settings: LocalSettingsEntity)
     @Insert suspend fun insertSegment(segment: TransportSegmentEntity)

@@ -2,258 +2,148 @@ package com.pacefit.ai.ui
 
 import android.app.Application
 import androidx.core.net.toUri
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.viewModelScope
-import com.pacefit.ai.data.ForegroundMovementMonitor
-import com.pacefit.ai.data.LocalRepository
-import com.pacefit.ai.data.PhotoDirectory
-import com.pacefit.ai.data.PloggingEntity
-import com.pacefit.ai.data.TableSnapshot
-import com.pacefit.ai.data.TransportSegmentEntity
-import com.pacefit.ai.data.UrbanReportEntity
-import com.pacefit.ai.data.captureCoordinates
-import com.pacefit.ai.domain.ActivityHint
-import com.pacefit.ai.domain.LocalInput
-import com.pacefit.ai.domain.ReportKind
-import com.pacefit.ai.domain.WasteQuantity
+import androidx.lifecycle.*
+import com.pacefit.ai.PaceFitApplication
+import com.pacefit.ai.data.*
+import com.pacefit.ai.domain.*
 import java.io.File
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.TimeoutCancellationException
-import kotlinx.coroutines.joinAll
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.*
 
-data class CityDraft(
-    val latitude: String = "",
-    val longitude: String = "",
-    val photoUri: String? = null,
-    val quantity: WasteQuantity = WasteQuantity.LITTLE,
-    val kind: ReportKind = ReportKind.WASTE,
-    val description: String = "",
-    val consent: Boolean = false,
-)
+data class CityDraft(val latitude: String = "", val longitude: String = "", val photoUri: String? = null,
+    val quantity: WasteQuantity = WasteQuantity.LITTLE, val kind: ReportKind = ReportKind.WASTE,
+    val description: String = "", val consent: Boolean = false, val publishConsent: Boolean = false)
 
-data class LocalUiState(
-    val loaded: Boolean = false,
-    val storageError: Boolean = false,
-    val busy: Boolean = false,
-    val message: String? = null,
-    val segments: List<TransportSegmentEntity> = emptyList(),
-    val plogging: List<PloggingEntity> = emptyList(),
-    val reports: List<UrbanReportEntity> = emptyList(),
-    val draft: CityDraft = CityDraft(),
-    val windowSeconds: Int = 30,
-    val windowDraft: String = "30",
-    val activity: ActivityHint = ActivityHint.UNKNOWN,
-    val monitoring: Boolean = false,
-    val movementStatus: String = "Detección detenida.",
-    val speedKmh: Double? = null,
-    val capturingLocation: Boolean = false,
-    val table: String = "health_profile",
-    val snapshot: TableSnapshot? = null,
-)
+data class LocalUiState(val loaded: Boolean = false, val storageError: Boolean = false, val busy: Boolean = false,
+    val message: String? = null, val segments: List<TransportSegmentEntity> = emptyList(),
+    val plogging: List<PloggingEntity> = emptyList(), val reports: List<UrbanReportEntity> = emptyList(),
+    val draft: CityDraft = CityDraft(), val windowSeconds: Int = 30, val windowDraft: String = "30",
+    val capturingLocation: Boolean = false, val table: String = "health_profile", val snapshot: TableSnapshot? = null)
 
+/** City drafts and storage inspection only; activity lifecycle and cloud/account have their own VMs. */
 class LocalViewModel(application: Application, private val repository: LocalRepository) : AndroidViewModel(application) {
-    private val mutableState = MutableStateFlow(LocalUiState())
-    val state = mutableState.asStateFlow()
-    private var monitor: ForegroundMovementMonitor? = null
+    private val app get() = getApplication<PaceFitApplication>()
+    private val mutable = MutableStateFlow(LocalUiState())
+    val state = mutable.asStateFlow()
     private var locationJob: Job? = null
-    private val pendingSegments = mutableSetOf<Job>()
-    private val applicationContext get() = getApplication<Application>()
-    val databasePath: String get() = repository.databaseFile.absolutePath
-    val filesPath: String get() = repository.photos.root.absolutePath
-
+    private val drafts = mutableMapOf<Boolean, CityDraft>()
+    private var draftIsPlogging = true
+    val databasePath get() = repository.databaseFile.absolutePath
+    val filesPath get() = repository.photos.root.absolutePath
     init {
         viewModelScope.launch {
             try {
+                app.initialization.join()
                 repository.initialize()
-                val seconds = repository.windowSeconds()
-                mutableState.update { it.copy(loaded = true, windowSeconds = seconds, windowDraft = seconds.toString()) }
+                val window = repository.windowSeconds()
+                mutable.update { it.copy(loaded = true, windowSeconds = window, windowDraft = window.toString()) }
                 combine(repository.segments, repository.plogging, repository.reports) { segments, plogging, reports ->
                     Triple(segments, plogging, reports)
-                }.collect { (segments, plogging, reports) ->
-                    mutableState.update { it.copy(segments = segments, plogging = plogging, reports = reports) }
-                }
+                }.collect { (segments, plogging, reports) -> mutable.update { it.copy(segments = segments, plogging = plogging, reports = reports) } }
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
-                mutableState.update { it.copy(storageError = true, message = "No se pudo abrir el almacenamiento. Vuelve a abrir la app para reintentar.") }
+                mutable.update { it.copy(storageError = true, message = "No se pudo abrir el almacenamiento. Vuelve a abrir la app.") }
             }
         }
     }
-
     fun editDraft(draft: CityDraft) {
-        if (!state.value.busy) mutableState.update { it.copy(draft = draft) }
+        if (!state.value.busy) { drafts[draftIsPlogging] = draft; mutable.update { it.copy(draft = draft) } }
     }
-
-    fun editWindow(value: String) {
-        if (!state.value.busy && !state.value.monitoring) mutableState.update { it.copy(windowDraft = value) }
+    fun openDraft(plogging: Boolean) {
+        locationJob?.cancel()
+        drafts[draftIsPlogging] = state.value.draft
+        draftIsPlogging = plogging
+        mutable.update { it.copy(draft = drafts[plogging] ?: CityDraft()) }
     }
-
-    fun chooseActivity(activity: ActivityHint) {
-        mutableState.update { it.copy(activity = activity) }
-    }
-
+    fun clearDrafts() { locationJob?.cancel(); drafts.clear(); mutable.update { it.copy(draft = CityDraft(), snapshot = null) } }
+    fun editWindow(value: String) { if (!state.value.busy) mutable.update { it.copy(windowDraft = value) } }
     fun saveWindow() {
-        if (state.value.monitoring) return
         val seconds = LocalInput.windowSeconds(state.value.windowDraft)
         if (seconds == null) { showMessage("La ventana debe ser de 15 a 120 segundos."); return }
-        action("Ventana guardada en SQLite.") {
+        action {
+            require(app.activityRepository.unfinished() == null) { "Finaliza primero la actividad." }
             repository.saveWindow(seconds)
-            mutableState.update { it.copy(windowSeconds = seconds) }
+            mutable.update { it.copy(windowSeconds = seconds, message = "Ventana guardada en SQLite.") }
         }
     }
-
-    fun startMonitoring() {
-        if (!ready() || state.value.monitoring) return
-        try {
-            val newMonitor = ForegroundMovementMonitor(
-                applicationContext, state.value.windowSeconds, { state.value.activity },
-                onReading = { speed, hasSteps ->
-                    mutableState.update {
-                        it.copy(speedKmh = speed, movementStatus = if (hasSteps) "GPS y pasos disponibles." else "GPS disponible; sin lectura de pasos.")
-                    }
-                },
-                onSegment = { segment ->
-                    val job = viewModelScope.launch {
-                        try {
-                            repository.saveSegment(segment)
-                            mutableState.update { it.copy(movementStatus = "Tramo guardado: ${segment.classification.label}.") }
-                        } catch (error: Exception) {
-                            if (error is CancellationException) throw error
-                            stopMonitoring()
-                            showMessage("No se pudo guardar el tramo. Se detuvo la detección.")
-                        }
-                    }
-                    pendingSegments += job
-                    job.invokeOnCompletion { pendingSegments -= job }
-                },
-                onStatus = { status -> mutableState.update { it.copy(movementStatus = status) } },
-            )
-            newMonitor.start()
-            monitor = newMonitor
-            mutableState.update { it.copy(monitoring = true) }
-        } catch (error: Exception) {
-            showMessage(if (error is IllegalStateException) error.message ?: "Activa el GPS." else "No se pudo iniciar: comprueba el permiso de ubicación precisa.")
-        }
-    }
-
-    fun stopMonitoring() {
-        monitor?.stop()
-        monitor = null
-        mutableState.update { it.copy(monitoring = false, speedKmh = null, movementStatus = "Detección detenida. Las ventanas incompletas no se guardan.") }
-    }
-
     fun captureLocation() {
         if (!ready() || state.value.capturingLocation) return
-        mutableState.update { it.copy(capturingLocation = true) }
+        mutable.update { it.copy(capturingLocation = true) }
         locationJob = viewModelScope.launch {
             try {
-                val coordinates = captureCoordinates(applicationContext)
-                mutableState.update {
-                    it.copy(draft = it.draft.copy(latitude = coordinates.latitude.toString(), longitude = coordinates.longitude.toString()))
-                }
-            } catch (_: TimeoutCancellationException) {
-                showMessage("No se obtuvo GPS preciso en 30 segundos. Puedes escribir las coordenadas.")
-            } catch (error: Exception) {
+                val coordinates = captureCoordinates(app)
+                editDraft(state.value.draft.copy(latitude = coordinates.latitude.toString(), longitude = coordinates.longitude.toString(), consent = false))
+            } catch (_: TimeoutCancellationException) { showMessage("No se obtuvo GPS preciso en 30 segundos. Puedes escribir las coordenadas.") }
+            catch (error: Exception) {
                 if (error is CancellationException) throw error
-                showMessage("No se pudo obtener la ubicación. Activa el GPS o escribe las coordenadas.")
-            } finally {
-                mutableState.update { it.copy(capturingLocation = false) }
-            }
+                showMessage("Activa el GPS y el permiso preciso, o escribe las coordenadas.")
+            } finally { mutable.update { it.copy(capturingLocation = false) } }
         }
     }
-
-    fun stopForegroundWork() {
-        stopMonitoring()
-        locationJob?.cancel()
-    }
-
-    fun saveCityEntry(plogging: Boolean) {
+    fun saveCityEntry(plogging: Boolean, onSaved: () -> Unit = {}) {
         val draft = state.value.draft
         val coordinates = LocalInput.coordinates(draft.latitude, draft.longitude)
-        if (coordinates == null) { showMessage("Escribe latitud y longitud válidas; se acepta coma decimal."); return }
+        if (coordinates == null) { showMessage("Escribe coordenadas válidas; se acepta coma decimal."); return }
         val photo = draft.photoUri
         if (photo == null) { showMessage("Selecciona una foto."); return }
         if (!draft.consent) { showMessage("Confirma la clasificación y el permiso para guardar foto y ubicación."); return }
-        action("Registro guardado solo en este teléfono.") {
-            if (plogging) repository.addPlogging(draft.quantity, coordinates, photo.toUri(), draft.consent)
-            else repository.addReport(draft.kind, draft.description, coordinates, photo.toUri(), draft.consent)
-            mutableState.update { it.copy(draft = CityDraft()) }
-        }
-    }
-
-    fun resolveReport(report: UrbanReportEntity) = action("Estado actualizado.") {
-        repository.resolveReport(report.id, !report.resolved)
-    }
-
-    fun deleteReport(id: String) = action("Reporte y foto eliminados.") { repository.deleteReport(id) }
-    fun deletePlogging(id: String) = action("Registro y foto eliminados.") { repository.deletePlogging(id) }
-
-    fun selectTable(table: String) {
-        if (table !in LocalRepository.TABLES || state.value.busy) return
-        mutableState.update { it.copy(table = table, snapshot = null) }
-        refreshTable()
-    }
-
-    fun refreshTable() = action(null) { refreshSnapshot() }
-
-    private suspend fun refreshSnapshot() {
-        val table = state.value.table
-        val snapshot = repository.inspect(table)
-        mutableState.update { if (it.table == table) it.copy(snapshot = snapshot) else it }
-    }
-
-    fun eraseAll(onErased: () -> Unit) {
-        if (!ready()) return
-        stopForegroundWork()
-        action("Datos y fotos locales eliminados. No existía una cuenta remota.") {
-            val writes = pendingSegments.toList()
-            writes.forEach { it.cancel() }
-            writes.joinAll()
-            repository.eraseAll()
-            mutableState.update { LocalUiState(loaded = true, busy = true) }
-            onErased()
-        }
-    }
-
-    fun photoFile(kind: PhotoDirectory, name: String): File = repository.photos.file(kind, name)
-    fun showMessage(message: String) = mutableState.update { it.copy(message = message) }
-    fun dismissMessage() = mutableState.update { it.copy(message = null) }
-    private fun ready() = state.value.loaded && !state.value.busy && !state.value.storageError
-
-    private fun action(success: String?, block: suspend () -> Unit) {
-        if (!ready()) return
-        mutableState.update { it.copy(busy = true) }
-        viewModelScope.launch {
-            try {
-                block()
-                if (success != null) mutableState.update { it.copy(message = success) }
+        action {
+            val id = if (plogging) repository.addPlogging(draft.quantity, coordinates, photo.toUri(), true)
+                else repository.addReport(draft.kind, draft.description, coordinates, photo.toUri(), true)
+            // Local success is durable even if cloud publication fails: retry the SAME id from history.
+            drafts[plogging] = CityDraft()
+            mutable.update { it.copy(draft = CityDraft()) }
+            var message = "Registro guardado en este teléfono."
+            if (draft.publishConsent) try {
+                app.remoteRepository.publish(id, plogging, true)
+                message = "Guardado y publicado. Puntos calculados por el servidor."
             } catch (error: Exception) {
                 if (error is CancellationException) throw error
-                showMessage(if (error is IllegalArgumentException) error.message ?: "Entrada no válida."
-                    else "No se pudo completar el cambio. Revisa los datos o vuelve a abrir la app; un borrado interrumpido se reintentará.")
-            } finally {
-                mutableState.update { it.copy(busy = false) }
+                message = "Guardado localmente; no se publicó. Reintenta desde Mis registros con conexión y cuenta."
             }
+            showMessage(message); onSaved()
         }
     }
-
-    override fun onCleared() {
-        monitor?.stop()
-        locationJob?.cancel()
+    fun resolveReport(report: UrbanReportEntity) = action { repository.resolveReport(report.id, !report.resolved) }
+    fun deleteReport(id: String) = action { repository.deleteReport(id); showMessage("Copia local y foto eliminadas.") }
+    fun deletePlogging(id: String) = action { repository.deletePlogging(id); showMessage("Copia local y foto eliminadas.") }
+    fun selectTable(table: String) {
+        if (table !in LocalRepository.TABLES || state.value.busy) return
+        mutable.update { it.copy(table = table, snapshot = null) }; refreshTable()
     }
-
+    fun refreshTable() = action {
+        val table = state.value.table
+        val snapshot = repository.inspect(table)
+        mutable.update { if (it.table == table) it.copy(snapshot = snapshot) else it }
+    }
+    fun eraseAll(onErased: () -> Unit) = action {
+        require(app.activityRepository.unfinished() == null) { "Finaliza primero la actividad." }
+        locationJob?.cancelAndJoin()
+        repository.eraseAll()
+        drafts.clear()
+        mutable.value = LocalUiState(loaded = true, busy = true, message = "Datos locales eliminados. La cuenta remota se conserva.")
+        onErased()
+    }
+    fun photoFile(kind: PhotoDirectory, name: String): File = repository.photos.file(kind, name)
+    fun showMessage(message: String) = mutable.update { it.copy(message = message) }
+    fun dismissMessage() = mutable.update { it.copy(message = null) }
+    private fun ready() = state.value.loaded && !state.value.busy && !state.value.storageError
+    private fun action(block: suspend () -> Unit) {
+        if (!ready()) return
+        mutable.update { it.copy(busy = true) }
+        viewModelScope.launch {
+            try { block() }
+            catch (error: Exception) {
+                if (error is CancellationException) throw error
+                showMessage(if (error is IllegalArgumentException || error is IllegalStateException)
+                    error.message ?: "Entrada no válida." else "No se pudo completar el cambio. Reintenta; tus datos no se sustituyen por valores inventados.")
+            } finally { mutable.update { it.copy(busy = false) } }
+        }
+    }
     class Factory(private val application: Application, private val repository: LocalRepository) : ViewModelProvider.Factory {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(LocalViewModel::class.java))
-            @Suppress("UNCHECKED_CAST")
-            return LocalViewModel(application, repository) as T
+            @Suppress("UNCHECKED_CAST") return LocalViewModel(application, repository) as T
         }
     }
 }

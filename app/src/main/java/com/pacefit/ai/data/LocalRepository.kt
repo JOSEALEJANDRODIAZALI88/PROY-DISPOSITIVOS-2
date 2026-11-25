@@ -61,6 +61,7 @@ class LocalRepository(
                 id, quantity.name, quantity.points, coordinates.latitude,
                 coordinates.longitude, name, System.currentTimeMillis(),
             ))
+            id
         } catch (error: Exception) {
             withContext(NonCancellable) {
                 // A cancellation may arrive just after SQLite committed.
@@ -81,6 +82,7 @@ class LocalRepository(
                 id, kind.name, description.trim(), coordinates.latitude,
                 coordinates.longitude, name, false, System.currentTimeMillis(),
             ))
+            id
         } catch (error: Exception) {
             withContext(NonCancellable) {
                 if (dao.reportPhoto(id) == null) photos.delete(PhotoDirectory.REPORTS, name)
@@ -114,6 +116,8 @@ class LocalRepository(
         // Persistent marker retries an interrupted deletion on the next app launch.
         photos.clearPhotos()
         database.withTransaction {
+            database.publicationDao().clear()
+            database.activityDao().deleteAll()
             dao.deleteSegments()
             dao.deletePlogging()
             dao.deleteReports()
@@ -154,6 +158,7 @@ class LocalRepository(
     }
 
     companion object {
-        val TABLES = listOf("health_profile", "transport_segments", "plogging_entries", "urban_reports", "local_settings")
+        val TABLES = listOf("health_profile", "transport_segments", "plogging_entries", "urban_reports",
+            "local_settings", "activity_sessions", "route_points", "session_segments", "city_publications")
     }
 }

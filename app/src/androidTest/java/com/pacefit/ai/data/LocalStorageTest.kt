@@ -46,7 +46,7 @@ class LocalStorageTest {
 
     private fun open() {
         database = Room.databaseBuilder(context, HealthDatabase::class.java, name)
-            .addMigrations(HealthDatabase.MIGRATION_1_2).build()
+            .addMigrations(HealthDatabase.MIGRATION_1_2, HealthDatabase.MIGRATION_2_3).build()
         photos = PrivatePhotoStore(context, root)
         repository = LocalRepository(database, photos, context.getDatabasePath(name))
     }
@@ -79,7 +79,7 @@ class LocalStorageTest {
             execSQL("INSERT INTO health_profile VALUES (1, 70.5, 175.0, 25, 'UNSPECIFIED', 123)")
             close()
         }
-        migration.runMigrationsAndValidate(name, 2, true, HealthDatabase.MIGRATION_1_2).use { db ->
+        migration.runMigrationsAndValidate(name, 3, true, HealthDatabase.MIGRATION_1_2, HealthDatabase.MIGRATION_2_3).use { db ->
             db.query("SELECT weightKg FROM health_profile WHERE id = 1").use {
                 assertTrue(it.moveToFirst())
                 assertEquals(70.5, it.getDouble(0), 0.001)

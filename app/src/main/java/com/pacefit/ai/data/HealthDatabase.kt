@@ -40,15 +40,28 @@ interface HealthProfileDao {
 
 @Database(
     entities = [HealthProfileEntity::class, TransportSegmentEntity::class, PloggingEntity::class,
-        UrbanReportEntity::class, LocalSettingsEntity::class],
-    version = 2,
+        UrbanReportEntity::class, LocalSettingsEntity::class, ActivitySessionEntity::class,
+        RoutePointEntity::class, SessionSegmentEntity::class, PublicationEntity::class],
+    version = 3,
     exportSchema = true,
 )
 abstract class HealthDatabase : RoomDatabase() {
     abstract fun profileDao(): HealthProfileDao
     abstract fun localDao(): LocalDao
+    abstract fun activityDao(): ActivityDao
+    abstract fun publicationDao(): PublicationDao
 
     companion object {
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("CREATE TABLE IF NOT EXISTS activity_sessions (id TEXT NOT NULL PRIMARY KEY, startedAt INTEGER NOT NULL, endedAt INTEGER, state TEXT NOT NULL, durationMillis INTEGER NOT NULL)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS route_points (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, sessionId TEXT NOT NULL, timeMillis INTEGER NOT NULL, latitude REAL NOT NULL, longitude REAL NOT NULL, accuracy REAL NOT NULL, speedKmh REAL NOT NULL, altitudeMeters REAL, pressureHpa REAL, FOREIGN KEY(sessionId) REFERENCES activity_sessions(id) ON DELETE CASCADE)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_route_points_sessionId ON route_points(sessionId)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS session_segments (segmentId TEXT NOT NULL PRIMARY KEY, sessionId TEXT NOT NULL, FOREIGN KEY(sessionId) REFERENCES activity_sessions(id) ON DELETE CASCADE, FOREIGN KEY(segmentId) REFERENCES transport_segments(id) ON DELETE CASCADE)")
+                db.execSQL("CREATE INDEX IF NOT EXISTS index_session_segments_sessionId ON session_segments(sessionId)")
+                db.execSQL("CREATE TABLE IF NOT EXISTS city_publications (localId TEXT NOT NULL PRIMARY KEY, ownerId TEXT NOT NULL, remoteId TEXT NOT NULL, kind TEXT NOT NULL)")
+            }
+        }
         val MIGRATION_1_2 = object : Migration(1, 2) {
             override fun migrate(db: SupportSQLiteDatabase) {
                 db.execSQL("CREATE TABLE IF NOT EXISTS transport_segments (id TEXT NOT NULL PRIMARY KEY, startedAt INTEGER NOT NULL, endedAt INTEGER NOT NULL, distanceMeters REAL NOT NULL, averageSpeedKmh REAL NOT NULL, steps INTEGER, activity TEXT NOT NULL, classification TEXT NOT NULL, includedInMetrics INTEGER NOT NULL)")
@@ -69,8 +82,10 @@ interface HealthRepository {
 class RoomHealthRepository(
     private val dao: HealthProfileDao,
     private val localStorage: LocalRepository? = null,
+    private val awaitReady: suspend () -> Unit = {},
 ) : HealthRepository {
     override fun observe(): Flow<HealthProfile?> = flow {
+        awaitReady()
         localStorage?.initialize()
         emitAll(dao.observe().map { row ->
             row?.let {
@@ -97,6 +112,8 @@ class RoomHealthRepository(
 
     override suspend fun delete() = access { dao.delete() }
 
-    private suspend fun <T> access(block: suspend () -> T): T =
-        if (localStorage != null) localStorage.access(block) else block()
+    private suspend fun <T> access(block: suspend () -> T): T {
+        awaitReady()
+        return if (localStorage != null) localStorage.access(block) else block()
+    }
 }
