@@ -139,6 +139,20 @@ class ProfileViewModelTest {
         assertNull(vm.state.value.message)
     }
 
+    @Test fun globalLocalErasureClearsUnsavedHealthDraft() = runTest(dispatcher) {
+        val repository = FakeRepository(initial)
+        val vm = viewModel(repository)
+        advanceUntilIdle()
+        vm.edit(draft)
+        repository.value.value = null
+        advanceUntilIdle()
+        vm.resetAfterLocalErase()
+        assertNull(vm.state.value.profile)
+        assertEquals(ProfileDraft(), vm.state.value.draft)
+        assertTrue(vm.state.value.loaded)
+        assertTrue(vm.state.value.errors.isEmpty())
+    }
+
     private class FakeRepository(profile: HealthProfile? = null) : HealthRepository {
         val value = MutableStateFlow(profile)
         var saves = 0

@@ -4,12 +4,15 @@ Fuente: `recursos/PaceFit_AI_informe_final_Kanban.docx`.
 
 ## Acuerdo de entrega
 
-Se entrega primero **PF-001**, por la prioridad de disponer de una beta rápida.
-El resto del documento se conserva en el backlog; no se declara implementado.
+La primera entrega fue **PF-001**. El alcance posterior autorizado es únicamente
+**Integrante 4: PF-001, PF-007, PF-011 y PF-015**, adaptado a SQLite persistente y directorios privados.
+Los requisitos remotos originales y las dependencias de otros integrantes se conservan pendientes.
 La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 
 - Rama de la primera entrega: `primera-version`.
+- Rama del alcance local del Integrante 4 (Díaz): `integrante-4-diaz`.
 - Versión inicial: `0.1.0-beta.1`.
+- Edición local implementada: `0.2.0-local.1`; no equivale al cierre de los tickets originales.
 - Estados: Backlog → To Do → Análisis → Desarrollo → Testing → Despliegue → Done.
 - Límites: To Do 5; Análisis 2; Desarrollo 3; Testing 2; Despliegue 1. WIP activo máximo 8.
 - No mover a Done sin criterios verificados y evidencia. Una prueba escrita no equivale a una prueba ejecutada.
@@ -20,21 +23,21 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 
 | Ticket | Entrega | Informe | Dependencias | Estado |
 |---|---|---|---|---|
-| PF-001 | Base Android y perfil de salud local | RF01; B01 y parte de B02 | — | Testing: APK y 18 pruebas unitarias verificados; dispositivo pendiente |
+| PF-001 | Base Android y perfil de salud local | RF01; B01 y parte de B02 | — | Testing; evidencia actual en docs/VERIFICACION.md |
 | PF-002 | Catálogo de parámetros y fuentes | T01; RNF13 | — | Backlog |
 | PF-003 | Registro de actividad y sensores | RF02; B02/B03/B04 | PF-001 | Backlog |
 | PF-004 | Pendiente y esfuerzo | RF03; B05 | PF-002/003 | Backlog |
 | PF-005 | Altitud, agua, UV y resumen diario | RF04; B06/B07 parcial | PF-002/003/004 | Backlog |
 | PF-006 | Pulso mediante BLE | RF05; B08 | PF-003 | Backlog |
-| PF-007 | Detección de transporte | RF06; B11 | PF-003 | Backlog |
+| PF-007 | Detección de transporte | RF06; B11 | PF-003 | Parcial local: detector visible; integración y campo pendientes |
 | PF-008 | Alimentos locales y comidas | RF07; B10 | PF-001/002 | Backlog |
 | PF-009 | Comida por fotografía | RF07; B12 | PF-008/012 | Backlog |
 | PF-010 | Cuenta y perfil social | RF16; B20 parcial | PF-001 | Backlog |
-| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | Backlog |
+| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | Adaptación de borrado local; aceptación remota pendiente |
 | PF-012 | Gateway de IA y asesor semanal | RF08; B07 | PF-005/010/011 | Backlog |
 | PF-013 | Corredores, solicitudes, chat y bloqueo | RF13; B17 | PF-003/010/011/012 | Backlog |
 | PF-014 | Zonas y competencia semanal | RF12; B16 | PF-003/010/011 | Backlog |
-| PF-015 | Plogging y reportes urbanos | RF14; B18 | PF-010/011/012 | Backlog |
+| PF-015 | Plogging y reportes urbanos | RF14; B18 | PF-010/011/012 | Parcial local; mapa, IA, Storage y servidor pendientes |
 | PF-016 | Reporte PDF sin internet | RF11; B09 | PF-003/005/008 | Backlog |
 | PF-017 | Aclimatación orientativa | RF09; B13 | PF-001/002 | Backlog, opcional en informe |
 | PF-018 | Ruta de menor esfuerzo | RF10; B14 | PF-003/004 | Backlog, opcional en informe |
@@ -43,6 +46,26 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 
 Los opcionales permanecen en el backlog porque se solicitó cubrir el documento completo,
 pero no forman parte del primer ticket.
+
+### Adaptación local autorizada
+
+- PF-001: conservar CRUD, perfil único y borradores; migrar SQLite 1→2 sin pérdida.
+- PF-007: GPS preciso y pasos opcionales mientras la pantalla está visible, actividad indicada por el usuario,
+  ventana persistente 15–120 s y clasificación conservadora. Guardar vehículos/no determinados pero
+  excluirlos de futuras métricas deportivas. No sustituye el servicio de PF-003 ni constituye validación de campo.
+- PF-011: confirmar el borrado de las cinco tablas y fotos privadas, recuperarse de interrupciones,
+  mantener exclusión de backups y no añadir Internet. **No existe una cuenta remota que eliminar.**
+- PF-015: foto privada comprimida sin EXIF, ubicación GPS opcional o coordenadas manuales,
+  clasificación/consentimiento confirmados, puntos recalculados localmente, resolver/borrar reportes.
+  **Sin mapa compartido, reconocimiento por IA ni puntos verificados en servidor.**
+- Visor de tablas y rutas en la app; guía de inspección externa en `docs/SQLITE.md`.
+
+Los criterios originales que siguen abajo no se relajan ni se consideran cumplidos por esta adaptación.
+Los permisos opcionales GPS/actividad pertenecen a PF-007/PF-015; el perfil sigue sin exigirlos.
+Evidencia ejecutada y pendiente: `docs/VERIFICACION.md`. No se marcan estos tickets como Done.
+Verificación del 24/11/2026: APK compilada e instalada en emulador API 35,
+32 pruebas unitarias y 14 instrumentadas sin fallos; Lint con 0 errores y 14 advertencias.
+Esto no cierra los requisitos remotos, la aceptación manual completa ni las pruebas de campo.
 
 ## PF-001 — Base Android y perfil de salud local
 

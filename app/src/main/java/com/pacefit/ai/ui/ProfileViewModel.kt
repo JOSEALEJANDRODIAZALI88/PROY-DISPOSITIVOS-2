@@ -76,6 +76,10 @@ class ProfileViewModel(private val repository: HealthRepository) : ViewModel() {
         mutableState.update { it.copy(message = null) }
     }
 
+    fun resetAfterLocalErase() {
+        mutableState.update { ProfileUiState(loaded = true) }
+    }
+
     private fun persist(success: String, action: suspend () -> Unit) {
         mutableState.update { it.copy(saving = true) }
         viewModelScope.launch {

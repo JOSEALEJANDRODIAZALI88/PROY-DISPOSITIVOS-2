@@ -1,5 +1,10 @@
 package com.pacefit.ai.ui
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -33,6 +38,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -41,12 +47,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.pacefit.ai.domain.ProfileSex
 import java.time.Instant
 import java.time.ZoneId
@@ -67,14 +77,47 @@ private val Palette = darkColorScheme(
 )
 
 @Composable
-fun PaceFitRoot(viewModel: ProfileViewModel) {
+fun PaceFitRoot(viewModel: ProfileViewModel, localViewModel: LocalViewModel) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val localState by localViewModel.state.collectAsStateWithLifecycle()
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var pendingDetection by rememberSaveable { mutableStateOf(false) }
     val snackbar = remember { SnackbarHostState() }
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    DisposableEffect(lifecycle, localViewModel) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) localViewModel.stopForegroundWork()
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer); localViewModel.stopForegroundWork() }
+    }
+    val permissions = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        if (context.checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
+            if (pendingDetection) localViewModel.startMonitoring() else localViewModel.captureLocation()
+        } else localViewModel.showMessage("Se necesita ubicación precisa para usar GPS. El perfil y el ingreso manual siguen disponibles.")
+    }
+    val requestLocation: (Boolean) -> Unit = { detection ->
+        pendingDetection = detection
+        val requested = buildList {
+            add(Manifest.permission.ACCESS_FINE_LOCATION)
+            add(Manifest.permission.ACCESS_COARSE_LOCATION)
+            if (detection && Build.VERSION.SDK_INT >= 29) add(Manifest.permission.ACTIVITY_RECOGNITION)
+        }
+        if (requested.all { context.checkSelfPermission(it) == PackageManager.PERMISSION_GRANTED }) {
+            if (detection) localViewModel.startMonitoring() else localViewModel.captureLocation()
+        } else permissions.launch(requested.toTypedArray())
+    }
     LaunchedEffect(state.message) {
         state.message?.let {
             snackbar.showSnackbar(it)
             viewModel.dismissMessage()
+        }
+    }
+    LaunchedEffect(localState.message) {
+        localState.message?.let {
+            snackbar.showSnackbar(it)
+            localViewModel.dismissMessage()
         }
     }
     MaterialTheme(colorScheme = Palette) {
@@ -82,11 +125,11 @@ fun PaceFitRoot(viewModel: ProfileViewModel) {
             snackbarHost = { SnackbarHost(snackbar) },
             bottomBar = {
                 NavigationBar(containerColor = Palette.surface) {
-                    listOf("Inicio", "Mi perfil", "Próximos tickets").forEachIndexed { index, label ->
+                    listOf("Inicio", "Perfil", "Transporte", "Ciudad", "Datos").forEachIndexed { index, label ->
                         NavigationBarItem(
                             selected = tab == index,
                             onClick = { tab = index },
-                            icon = { Text(listOf("01", "02", "03")[index], fontWeight = FontWeight.Bold) },
+                            icon = { Text("0${index + 1}", fontWeight = FontWeight.Bold) },
                             label = { Text(label) },
                         )
                     }
@@ -94,8 +137,11 @@ fun PaceFitRoot(viewModel: ProfileViewModel) {
             },
         ) { padding ->
             when (tab) {
-                0 -> Home(state, padding) { tab = 1 }
-                1 -> ProfileEditor(state, viewModel, padding)
+                0 -> Home(state, padding, { tab = 1 }, { tab = 5 })
+                1 -> ProfileEditor(state, viewModel, padding, localState.busy || localState.storageError)
+                2 -> TransportScreen(localState, localViewModel, padding) { requestLocation(true) }
+                3 -> CityScreen(localState, localViewModel, padding) { requestLocation(false) }
+                4 -> DataScreen(localState, localViewModel, padding, state.saving, viewModel::resetAfterLocalErase)
                 else -> Roadmap(padding)
             }
         }
@@ -103,7 +149,7 @@ fun PaceFitRoot(viewModel: ProfileViewModel) {
 }
 
 @Composable
-private fun Home(state: ProfileUiState, padding: PaddingValues, openProfile: () -> Unit) {
+private fun Home(state: ProfileUiState, padding: PaddingValues, openProfile: () -> Unit, openRoadmap: () -> Unit) {
     Column(
         Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(20.dp),
@@ -117,7 +163,7 @@ private fun Home(state: ProfileUiState, padding: PaddingValues, openProfile: () 
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text("HECHO PARA LA PAZ", color = Lime, style = MaterialTheme.typography.labelLarge)
                 Text("Tu salud.\nEn tu teléfono.", style = MaterialTheme.typography.headlineLarge, fontWeight = FontWeight.Bold)
-                Text("Primera beta · PF-001\nPerfil privado, editable y disponible sin internet.", color = Color(0xFFDFEBE7))
+                Text("Edición local · SQLite persistente\nPerfil privado, editable y disponible sin internet.", color = Color(0xFFDFEBE7))
                 Button(onClick = openProfile, enabled = state.loaded) {
                     Text(if (state.profile == null) "Crear mi perfil" else "Editar mi perfil")
                 }
@@ -128,17 +174,18 @@ private fun Home(state: ProfileUiState, padding: PaddingValues, openProfile: () 
             InfoCard("Tu perfil local", "${profile.weightKg} kg  ·  ${profile.heightCm} cm  ·  ${profile.age} años\n${profile.sex.label}")
         }
         if (state.storageError) InfoCard("Almacenamiento no disponible", "Cierra y vuelve a abrir la aplicación. No sobrescribiremos tu perfil.")
-        InfoCard("Privado desde el primer ticket", "Sin cuenta, anuncios ni conexión a servidores. Esta beta no solicita permisos y excluye sus datos de las copias de seguridad y transferencias Android.")
-        InfoCard("Qué incluye esta versión", "Crear, consultar, editar y eliminar el perfil de salud. GPS, IA, BLE, funciones sociales y reportes todavía no están implementados.")
+        InfoCard("Privado y local", "Sin cuenta, anuncios ni conexión a servidores. GPS y pasos son opcionales. Fotos en directorios privados, sin permisos de almacenamiento. Datos excluidos de backup y transferencia Android.")
+        InfoCard("Qué incluye esta versión", "Perfil, detección de transporte con la pantalla abierta, plogging y reportes locales, consulta de tablas y borrado de datos. No incluye cuentas remotas, IA, mapa compartido, BLE ni cálculos de salud.")
+        OutlinedButton(onClick = openRoadmap) { Text("Ver alcance y próximos tickets") }
         Text("Herramienta de orientación, no un dispositivo médico.", color = Muted, style = MaterialTheme.typography.bodySmall)
-        Text("0.1.0-beta.1 · Android 8.0 o posterior", color = Muted, style = MaterialTheme.typography.labelSmall)
+        Text("0.2.0-local.1 · Android 8.0 o posterior", color = Muted, style = MaterialTheme.typography.labelSmall)
     }
 }
 
 @Composable
-private fun ProfileEditor(state: ProfileUiState, viewModel: ProfileViewModel, padding: PaddingValues) {
+private fun ProfileEditor(state: ProfileUiState, viewModel: ProfileViewModel, padding: PaddingValues, blocked: Boolean) {
     var confirmDelete by rememberSaveable { mutableStateOf(false) }
-    val enabled = state.loaded && !state.saving && !state.storageError
+    val enabled = state.loaded && !state.saving && !state.storageError && !blocked
     Column(
         Modifier.fillMaxSize().padding(padding).imePadding()
             .verticalScroll(rememberScrollState()).padding(24.dp),
@@ -230,18 +277,18 @@ private fun Roadmap(padding: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Header("PASO A PASO", "Una beta, tickets verificables.")
-        InfoCard("PF-001 · Implementado", "Base Android, navegación y perfil local con Room. La verificación y sus límites se registran en TICKETS.md.")
+        InfoCard("Integrante 4 · Edición local", "PF-001 conserva el perfil. PF-007 incorpora detección visible y persistencia. PF-011 y PF-015 tienen adaptaciones locales, no seguridad remota ni mapa compartido. Consulta TICKETS.md para pruebas y límites.")
         Text("Lo siguiente todavía no está implementado:", color = Muted)
         listOf(
             "PF-002 · Parámetros y fuentes" to "Catálogo trazable; supuestos y límites explícitos.",
             "PF-003 · GPS y actividad" to "Rutas, servicio en primer plano, barómetro y pasos.",
             "PF-004 / 005 · Esfuerzo y altitud" to "Tobler, Minetti, agua, electrolitos, calorías y UV.",
-            "PF-006 / 007 · Banda y transporte" to "Pulso BLE y tramos de vehículo.",
+            "PF-006 / 007 · Integración pendiente" to "Pulso BLE y detección de transporte integrada con el servicio de PF-003.",
             "PF-008 / 009 · Alimentación" to "Alimentos locales y comidas; confirmación de fotos.",
             "PF-010 / 011 · Cuenta y seguridad" to "Supabase, RLS, consentimiento y borrado.",
             "PF-012 · Asesor de IA" to "Gateway, límite por usuario y memoria de siete días.",
             "PF-013 / 014 · Comunidad" to "Corredores, solicitudes, chat, bloqueo y zonas.",
-            "PF-015 · Ciudad" to "Plogging, fotos y reportes en el mapa.",
+            "PF-015 · Ciudad remota" to "Mapa compartido, puntos verificados en servidor y moderación remota.",
             "PF-016 / 017 · Reportes y aclimatación" to "PDF sin internet y semáforo orientativo.",
             "PF-018 / 019 · Rutas creativas" to "Menor esfuerzo y dibujo GPS.",
             "PF-020 · Verificación" to "Pruebas en dispositivos y entrega beta integrada.",
