@@ -1,5 +1,23 @@
 # PaceFit AI — Registro de verificación
 
+## Recompilación tras la publicación — 25/11/2026
+
+- Publicación funcional en `integrante-4-diaz`: `0d65710`; documentación de publicación: `805a42e`.
+- Se revisaron los ajustes de toolchain JDK 21 (`settings.gradle.kts` y
+  `gradle/gradle-daemon-jvm.properties`) y se ejecutó de nuevo:
+  `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest`.
+- Resultado: **BUILD SUCCESSFUL**, 32 unitarias aprobadas, sin fallos ni omisiones;
+  Lint **0 errores y 17 advertencias**. APK instrumentado compilado.
+- APK local actual: `app/build/outputs/apk/debug/app-debug.apk`, `0.3.0-beta.1`, código 3,
+  **18.738.004 bytes**.
+- SHA-256: `6dd4b09edc6eda299d4233a6cac4632bc8e2fc7058304c4f522a3a2947da1ac9`.
+- Firma v2 verificada, un firmante; BuildConfig conserva la URL HTTPS del proyecto autorizado
+  y su configuración pública.
+- **No se ejecutaron de nuevo las pruebas instrumentadas sobre este nuevo binario.**
+  Las 24 aprobadas en cada API que se detallan abajo corresponden al APK anterior `d197592d…`.
+  Sus informes no se adjudican a este hash. No hubo cambios funcionales Kotlin en esta recompilación.
+- El APK, las claves y la configuración privada no se publicaron en Git.
+
 ## Ampliación de confirmación por código — 25/11/2026
 
 - Configuración remota consultada sin imprimir secretos: SMTP Gmail guardado, puerto TLS,
@@ -22,7 +40,7 @@
   **no se envió correo y no se acredita entrega Gmail**.
 - Gemini todavía no está configurado según la última consulta; no se ejecutó inferencia.
 
-Artefacto vigente de esta ampliación:
+Artefacto instrumentado de esta ampliación, anterior a la recompilación:
 
 - `app/build/outputs/apk/debug/app-debug.apk`, `0.3.0-beta.1`, código 3, **19.168.774 bytes**.
 - SHA-256: `d197592dc5282e4a03630a37b83b18555d0c16252d4eca151613ce47cf198405`.

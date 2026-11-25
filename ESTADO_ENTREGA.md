@@ -2,14 +2,16 @@
 
 **Fecha de corte:** 25/11/2026
 
-**Versión del APK verificado:** `0.3.0-beta.1` (código 3)
+**Versión del APK actual:** `0.3.0-beta.1` (código 3)
 
 **Rama de trabajo:** `integrante-4-diaz`
 
 ## Resumen
 
 La aplicación Android, la base SQLite y el servidor Supabase están implementados.
-El APK está compilado y probado contra el servidor real en Android 8 y Android 15.
+El flujo se probó contra el servidor real en Android 8 y Android 15 con el APK instrumentado
+anterior. La recompilación actual pasó compilación, 32 unitarias y Lint; requiere repetir
+las pruebas instrumentadas sobre su nuevo hash.
 **La entrega original todavía no está cerrada al 100 %:** faltan conectar y probar
 Gemini, comprobar la llegada real del correo y completar la aceptación en teléfonos físicos.
 La actualización está publicada en [GitHub, rama `integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz).
@@ -70,8 +72,8 @@ validado en campo. Las pruebas GPS ejecutadas utilizaron posiciones simuladas.
 | Comprobación | Resultado registrado |
 |---|---|
 | Pruebas unitarias Android | 32 aprobadas |
-| Pruebas instrumentadas en Android 8 / API 26 | 24 aprobadas |
-| Pruebas instrumentadas en Android 15 / API 35 | 24 aprobadas |
+| Pruebas instrumentadas en Android 8 / API 26 | 24 aprobadas en el artefacto anterior |
+| Pruebas instrumentadas en Android 15 / API 35 | 24 aprobadas en el artefacto anterior |
 | Lint del APK actual | 0 errores y 17 advertencias |
 | Pruebas SQL del backend local | 34 aprobadas |
 | Comprobaciones HTTP del backend local | 27 aprobadas |
@@ -140,6 +142,15 @@ en el commit `0d657107cc8db0cde9cf86a89dad4f242166cb42`. Se verificó el mismo h
 en la rama remota; `primera-version` conserva su commit anterior y no se creó ni modificó `main`.
 La publicación no cierra los pendientes Gemini, correo real ni aceptación física.
 
+### F. Validación de la recompilación actual
+
+- [x] Compilar APK y APK de pruebas; ejecutar 32 unitarias y Lint.
+- [x] Verificar firma y configuración HTTPS pública.
+- [ ] Repetir las 24 instrumentadas en API 26/35 con el nuevo APK.
+
+Los informes anteriores corresponden al hash `d197592d…`, no al nuevo binario.
+Usar únicamente emuladores desechables sin datos personales para la instrumentación.
+
 ## 4. Estado de los tickets incluidos
 
 | Ticket | Ya implementado | Pendiente principal |
@@ -159,8 +170,9 @@ zonas competitivas, PDF ni módulos opcionales. No forman parte de esta entrega 
 
 - **APK:** `app/build/outputs/apk/debug/app-debug.apk`.
 - **Tipo:** compilación debug para desarrollo, no publicación Play Store.
-- **Tamaño:** 19.168.774 bytes.
-- **SHA-256:** `d197592dc5282e4a03630a37b83b18555d0c16252d4eca151613ce47cf198405`.
+- **Tamaño actual:** 18.738.004 bytes.
+- **SHA-256 actual:** `6dd4b09edc6eda299d4233a6cac4632bc8e2fc7058304c4f522a3a2947da1ac9`.
+- **Último APK instrumentado:** `d197592dc5282e4a03630a37b83b18555d0c16252d4eca151613ce47cf198405`.
 - [Evidencias y limitaciones](docs/VERIFICACION.md).
 - [Configuración del servidor y asistentes privados](docs/SERVIDOR.md).
 - [Tablas SQLite y directorios](docs/SQLITE.md).

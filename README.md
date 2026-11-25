@@ -113,6 +113,10 @@ La prueba Android cloud requiere la cuenta desechable del controlador descrito e
 El caso cloud rechaza un código incorrecto y acepta uno generado por Auth para la cuenta de
 prueba. Esto comprueba la verificación OTP, no la entrega de un mensaje por Gmail.
 Resultados, APK y límites en `docs/VERIFICACION.md`.
+La recompilación posterior a la publicación volvió a aprobar las 32 unitarias y Lint.
+Generó un APK distinto: las 24 instrumentadas por API corresponden al artefacto previo,
+no se atribuyen al nuevo hash. Véanse el SHA vigente y esa validación pendiente en
+[`ESTADO_ENTREGA.md`](ESTADO_ENTREGA.md).
 
 ## Privacidad
 
