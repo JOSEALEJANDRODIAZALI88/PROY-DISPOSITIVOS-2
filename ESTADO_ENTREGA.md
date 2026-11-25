@@ -12,7 +12,7 @@ La aplicación Android, la base SQLite y el servidor Supabase están implementad
 El APK está compilado y probado contra el servidor real en Android 8 y Android 15.
 **La entrega original todavía no está cerrada al 100 %:** faltan conectar y probar
 Gemini, comprobar la llegada real del correo y completar la aceptación en teléfonos físicos.
-La publicación en GitHub fue autorizada; el envío se verificará en `integrante-4-diaz`.
+La actualización está publicada en [GitHub, rama `integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz).
 
 ## 1. Lo que ya está implementado
 
@@ -128,14 +128,17 @@ Estas pruebas requieren participación con un teléfono real; el emulador no las
 - [ ] Mantener el límite Free: no habilitar servicios de pago para completar esas comprobaciones.
 - [ ] Registrar evidencias antes de marcar los tickets como Done.
 
-### E. Publicar la actualización en GitHub
+### E. Publicación en GitHub — completada
 
 - [x] Obtener autorización para publicar esta actualización.
 - [x] Revisar cambios y secretos; excluir claves, configuración privada y archivos de compilación.
-- [ ] Preparar el commit y verificar su subida a `integrante-4-diaz`.
-- [ ] No sobrescribir `main` ni `primera-version`.
+- [x] Preparar el commit y verificar su subida a `integrante-4-diaz`.
+- [x] No sobrescribir `main` ni `primera-version`.
 
-La versión local anterior ya fue publicada; **el rediseño y los cambios actuales siguen sin commit/push**.
+El rediseño, la integración cloud/OTP, las pruebas y esta documentación se publicaron
+en el commit `0d657107cc8db0cde9cf86a89dad4f242166cb42`. Se verificó el mismo hash
+en la rama remota; `primera-version` conserva su commit anterior y no se creó ni modificó `main`.
+La publicación no cierra los pendientes Gemini, correo real ni aceptación física.
 
 ## 4. Estado de los tickets incluidos
 

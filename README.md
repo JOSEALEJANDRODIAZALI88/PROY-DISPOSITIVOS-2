@@ -135,5 +135,7 @@ HTTPS · `ui/`: Navigation Compose/pantallas/ViewModels · `supabase/`: SQL/RLS/
 y pgTAP · `scripts/`: integración local/cloud, administración e ingreso privado de configuración.
 
 Repositorio independiente: <https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2>.
-No cambiar el remoto del repositorio padre. La nueva implementación no se publica automáticamente
-sin autorización; el historial `0.2.0-local.1` permanece en la rama del Integrante 4.
+La actualización `0.3.0-beta.1` está publicada en
+[`integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz),
+con el historial `0.2.0-local.1` conservado. No cambiar el remoto del repositorio padre ni
+sobrescribir `main` o `primera-version`. La publicación no implica cerrar los pendientes de aceptación.
