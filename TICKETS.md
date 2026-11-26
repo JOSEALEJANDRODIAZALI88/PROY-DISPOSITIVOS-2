@@ -73,11 +73,15 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 
 ### Integración autorizada `0.3.0-beta.1` — 25/11/2026
 
-- Herramientas de aceptación: 51 pruebas Python aprobadas, analizador privado de tiempos GPS,
+- Herramientas de aceptación/mantenimiento: 63 pruebas Python aprobadas, analizador privado de tiempos GPS,
   diario durable de cuentas temporales y asistente consentido de cinco fotos Gemini.
   Ensayo de respaldo de aplicación DPAPI/restauración PostgreSQL aislada aprobado:
   excluye la cuenta eliminada, restaura foto/uso/cuota y recalcula puntos.
-  No es recuperación Auth/PITR ni operación diaria aceptada; ver `docs/RESPALDOS.md`.
+  Tarea local 03:00/logon instalada sin contraseña/elevación: captura completa/purga
+  ejecutadas y resultado Windows 0. Verifica SHA/procedencia para no reutilizar un ensayo parcial.
+  No es recuperación Auth/PITR ni retención garantizada con el equipo apagado/sin sesión.
+  Inventario Free: 0 respaldos del proveedor y PITR desactivado; no se activó pago.
+  Procedimiento y límites: `docs/RESPALDOS.md`.
   El usuario no dispone de teléfono: no se declara campo/aceptación física aprobados.
 - Cuatro secciones Inicio/Actividad/Ciudad/Perfil, iconos semánticos, navegación secundaria atrás.
   Perfil, cuenta y datos separados; foto con vista previa y alta guiada, borradores independientes.

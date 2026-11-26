@@ -17,7 +17,8 @@ no se volvieron a ejecutar en esta etapa ni se invocó otra compilación.
 Gemini y completar la aceptación en teléfonos físicos, incluido el flujo de correo desde el APK.
 La recepción real Gmail y la confirmación pública ya aprobaron mediante el asistente de escritorio.
 También aprobaron el respaldo cifrado de datos de aplicación y su ensayo de restauración
-aislada. Esto no equivale a recuperar Auth/PITR ni a validar toda la retención del proveedor.
+aislada. Se instaló y ejecutó la tarea local diaria/de inicio de sesión para copiar y purgar.
+Esto no equivale a recuperar Auth/PITR ni a garantizar retención con el equipo apagado.
 Repositorio e historial: [GitHub, rama `integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz).
 Esta actualización incorpora los asistentes, la guía física, la revalidación del APK,
 la recepción real de correo y el ensayo de respaldo, sin cerrar los pendientes externos.
@@ -83,11 +84,15 @@ físico. Los OTP administrativos de las instrumentadas no son la evidencia de es
 - [x] Ensayo real de restauración en PostgreSQL aislado y fotos temporales verificadas.
 - [x] Exclusión de cuenta eliminada, puntos recalculados y recuperación de uso/cuota no vacíos.
 - [x] Rechazo de copias caducadas y purga acotada de prueba, con límite de 29 días.
+- [x] Tarea Windows del usuario actual, sin contraseña guardada ni elevación, a las 03:00 y al iniciar sesión.
+- [x] Ejecución real de la tarea: copia completa cifrada/descifrada y purga previa, resultado Windows 0.
+- [x] No reutilizar copias parciales de ensayo: verificar procedencia completa, SHA-256 y descifrado.
 - [x] Diario durable para recuperar solo cuentas temporales propias tras una interrupción.
 - [x] Asistente privado de cinco fotos para Gemini, con recomprensión sin EXIF y revisión manual.
 
 El asistente de IA está preparado, no probado con inferencias reales. La copia DPAPI es
-de aplicación, no Auth/PITR; no hay tarea diaria instalada ni recuperación integral aceptada.
+de aplicación, no Auth/PITR. La tarea ya está instalada/probada, pero necesita el equipo
+encendido y el usuario conectado; la recuperación integral no está aceptada.
 
 ## 2. Pruebas que ya aprobaron
 
@@ -102,8 +107,10 @@ de aplicación, no Auth/PITR; no hay tarea diaria instalada ni recuperación int
 | Comprobaciones HTTPS contra Supabase cloud | 27 aprobadas |
 | Firma del APK actual | V2 verificada, un firmante |
 | Correo real → OTP público → renovación/cierre → limpieza de prueba | Aprobado en el asistente de escritorio |
-| Herramientas Python de aceptación | 51 aprobadas; IA/SMTP/HTTP con dobles, no campo real |
+| Herramientas Python de aceptación/mantenimiento | 63 aprobadas; IA/SMTP/HTTP con dobles, no campo real |
 | Copia cifrada → cuenta borrada excluida → datos/foto restaurados aisladamente | Aprobado; no recuperación del proveedor/Auth |
+| Tarea diaria/logon → purga → captura completa cifrada | Aprobado; ejecución real y resultado Windows 0 |
+| Inventario del proveedor en Free | 0 respaldos disponibles; PITR desactivado, sin activar pagos |
 
 Son **24 casos instrumentados ejecutados en dos versiones: 48 ejecuciones**, no 48 casos distintos.
 Las comprobaciones del backend se registraron en sus etapas correspondientes; el detalle y los
@@ -164,7 +171,9 @@ la grabación; datos sintéticos no cierran este pendiente.
 - [ ] Completar pruebas físicas de reinicio, uso sin conexión y recuperación al volver la red.
 - [ ] Revisar texto grande, accesibilidad y errores de almacenamiento/espacio insuficiente.
 - [x] Implementar copia cifrada de aplicación y comprobar restauración aislada sin la cuenta borrada.
-- [ ] Completar recuperación integral/proveedor, operación diaria y retención de todas las copias.
+- [x] Instalar mantenimiento diario/al iniciar sesión y comprobar una captura completa mediante la tarea real.
+- [ ] Completar recuperación integral/proveedor y garantizar la operación/retención fuera de este equipo.
+- [ ] Revisar periódicamente fallos y ejecuciones perdidas; la tarea no funciona con el usuario desconectado o el PC apagado.
 - [ ] Mantener el límite Free: no habilitar servicios de pago para completar esas comprobaciones.
 - [ ] Registrar evidencias antes de marcar los tickets como Done.
 

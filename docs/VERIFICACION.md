@@ -1,6 +1,39 @@
 # PaceFit AI — Registro de verificación
 
-## Herramientas de aceptación y respaldo de aplicación — 25/11/2026
+## Mantenimiento local programado aprobado — 25/11/2026
+
+- `python -m unittest discover -s scripts -p 'test_*.py'`: **63 aprobadas**,
+  sin errores ni omisiones. Son las 51 de la etapa anterior y 12 de mantenimiento:
+  bloqueo exclusivo real, purga antes de red, fallos sin éxito falso, cifrado/descifrado,
+  antigüedad y procedencia completa/SHA para no reutilizar archivos de ensayos parciales.
+  HTTP sigue con dobles; no son nuevas unitarias Android ni inferencias Gemini.
+- `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/schedule-backup.ps1 -Action Install -RunNow`:
+  tarea `PaceFitAI-Backup-ymfypllkcrqwfwihqzpf` instalada/verificada y ejecutada.
+  Usuario actual, token interactivo, privilegios limitados, sin contraseña Windows guardada;
+  disparadores 03:00 locales e inicio de sesión, `StartWhenAvailable`, sin ejecuciones paralelas.
+  Se valida el SID real del XML registrado, no un nombre de usuario ambiguo.
+- Evidencia final:
+  `app/build/verification/backup-operation/result-becdd0f2c94948b9ad35daf132e1e86f.json`.
+  Run `cf74465699054c42b850026f81b30076`, terminado `2026-11-26T03:01:26.240179+00:00`
+  (25/11, 23:01 local): retención ejecutada, 0 archivos propios caducados eliminados,
+  **copia completa creada y descifrada/validada**, alcance `all_active_application_accounts`.
+  La consulta posterior `Get-ScheduledTaskInfo` confirmó `LastTaskResult = 0`;
+  siguiente ejecución prevista el 26/11 a las 03:00 locales.
+  Los estados/archivos privados permanecen en rutas ignoradas.
+- Un primer intento reutilizaba una copia de ensayo; se añadió procedencia completa y SHA.
+  Se corrigió compatibilidad Python 3.10 y se repitieron suite y ejecución real hasta la
+  evidencia anterior. Los intentos fallidos no sustituyen ese resultado final.
+- Inventario de proveedor consultado, sin modificarlo:
+  `app/build/verification/backup-operation/provider-inventory.json`:
+  **0 respaldos disponibles**, PITR desactivado. No se activaron facturación ni recuperación de pago.
+- **Límites:** no se restauró Auth/producción/PITR; no se simuló el paso real de 29 días.
+  La tarea requiere equipo encendido y ese usuario conectado. Una ejecución aprobada no
+  garantiza plazos con el equipo apagado, copias externas o fallos operativos futuros.
+  Gemini y aceptación física continúan pendientes. El APK no se modificó/recompiló;
+  sus 24 casos por API siguen ligados a `a4e74835…`, unitarias/Lint son informes anteriores.
+  Operación: [RESPALDOS.md](RESPALDOS.md).
+
+## Etapa anterior: herramientas de aceptación y respaldo de aplicación — 25/11/2026
 
 - **51 pruebas Python aprobadas**, sin errores ni omisiones:
   `python -m unittest discover -s scripts -p 'test_*.py'`.
@@ -27,7 +60,8 @@
   el otro se limpió tras comprobar su etiqueta administrativa. Se añadieron diarios
   durables sin contraseñas/tokens para recuperar futuros intentos ambiguos.
 - **Límites:** no se restauró producción, Auth ni backups/PITR del proveedor.
-  No se instaló una purga diaria automática; la operación integral sigue pendiente.
+  En esa etapa todavía no se había instalado la tarea diaria; se incorporó después
+  como se registra arriba. La recuperación integral continúa pendiente.
   Procedimiento y límites: [RESPALDOS.md](RESPALDOS.md).
 - El analizador SQLite de tiempos no consulta coordenadas/salud ni acredita pantalla
   apagada o teléfono real. El usuario indicó que ahora no tiene teléfono disponible:

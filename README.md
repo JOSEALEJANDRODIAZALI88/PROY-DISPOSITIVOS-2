@@ -127,10 +127,12 @@ Registro sin datos sensibles en `app/build/verification/email-delivery/`; client
 no una prueba de la UI Android en teléfono.
 Guía para el GPS y otras pruebas físicas: [`docs/ACEPTACION_FISICA.md`](docs/ACEPTACION_FISICA.md).
 
-Las herramientas posteriores aprobaron **51 pruebas Python** y un ensayo real de
+Las herramientas posteriores aprobaron **63 pruebas Python** y un ensayo real de
 respaldo cifrado/restauración de aplicación en PostgreSQL aislado, excluyendo una
-cuenta realmente eliminada. No restaura producción, Auth ni PITR y no instala
-purga automática: [`docs/RESPALDOS.md`](docs/RESPALDOS.md).
+cuenta realmente eliminada. La tarea limitada del usuario actual está instalada
+(03:00 + inicio de sesión) y aprobó una captura completa/purga real, resultado Windows 0.
+No restaura producción/Auth/PITR ni garantiza retención con el PC apagado o sin sesión:
+[`docs/RESPALDOS.md`](docs/RESPALDOS.md).
 Hay un analizador SQLite de tiempos GPS y un asistente privado de cinco fotos Gemini;
 ni los datos sintéticos ni las pruebas offline acreditan campo/inferencia.
 El usuario no dispone ahora de teléfono; esa aceptación permanece pendiente.
