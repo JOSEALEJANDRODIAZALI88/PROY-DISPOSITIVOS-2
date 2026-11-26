@@ -15,8 +15,8 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 - Versión inicial: `0.1.0-beta.1`.
 - Edición local implementada: `0.2.0-local.1`; no equivale al cierre de los tickets originales.
 - Integración/rediseño actual: `0.3.0-beta.1`; Supabase Free desplegado y 27 comprobaciones HTTPS
-  cloud aprobadas. SMTP Gmail guardado; confirmación OTP probada en Android 8/15. Entrega de correo,
-  inferencia Gemini y aceptación física siguen pendientes.
+  cloud aprobadas. SMTP/OTP Android probados y recepción real confirmada con el asistente de
+  escritorio; inferencia Gemini y aceptación física del flujo Android siguen pendientes.
 - Estados: Backlog → To Do → Análisis → Desarrollo → Testing → Despliegue → Done.
 - Límites: To Do 5; Análisis 2; Desarrollo 3; Testing 2; Despliegue 1. WIP activo máximo 8.
 - No mover a Done sin criterios verificados y evidencia. Una prueba escrita no equivale a una prueba ejecutada.
@@ -36,8 +36,8 @@ La numeración PF es operativa y no sustituye los IDs RF/B/T del informe.
 | PF-007 | Detección de transporte | RF06; B11 | PF-003 | Integrado con sesiones/rutas; validación de campo pendiente |
 | PF-008 | Alimentos locales y comidas | RF07; B10 | PF-001/002 | Backlog |
 | PF-009 | Comida por fotografía | RF07; B12 | PF-008/012 | Backlog |
-| PF-010 | Cuenta y perfil social | RF16; B20 parcial | PF-001 | Auth/perfil y OTP probados contra cloud en Android 8/15; SMTP guardado, entrega real pendiente |
-| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | SQL/RLS/Storage/cascada probados local y cloud; aceptación operativa/backups pendientes |
+| PF-010 | Cuenta y perfil social | RF16; B20 parcial | PF-001 | Auth/OTP Android y recepción real de correo en escritorio probados; aceptación en teléfono pendiente |
+| PF-011 | Seguridad remota y borrado de cuenta | RF16; B20; anexo B | PF-010 | SQL/RLS/Storage/cascada y respaldo de aplicación probado; recuperación integral/operación pendientes |
 | PF-012 | Gateway de IA y asesor semanal | RF08; B07 | PF-005/010/011 | Solo tarea photo/cuota para PF-015; inferencia real pendiente, resto Backlog |
 | PF-013 | Corredores, solicitudes, chat y bloqueo | RF13; B17 | PF-003/010/011/012 | Backlog |
 | PF-014 | Zonas y competencia semanal | RF12; B16 | PF-003/010/011 | Backlog |
@@ -73,6 +73,12 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 
 ### Integración autorizada `0.3.0-beta.1` — 25/11/2026
 
+- Herramientas de aceptación: 51 pruebas Python aprobadas, analizador privado de tiempos GPS,
+  diario durable de cuentas temporales y asistente consentido de cinco fotos Gemini.
+  Ensayo de respaldo de aplicación DPAPI/restauración PostgreSQL aislada aprobado:
+  excluye la cuenta eliminada, restaura foto/uso/cuota y recalcula puntos.
+  No es recuperación Auth/PITR ni operación diaria aceptada; ver `docs/RESPALDOS.md`.
+  El usuario no dispone de teléfono: no se declara campo/aceptación física aprobados.
 - Cuatro secciones Inicio/Actividad/Ciudad/Perfil, iconos semánticos, navegación secundaria atrás.
   Perfil, cuenta y datos separados; foto con vista previa y alta guiada, borradores independientes.
 - PF-003/007: servicio FGS con notificación, inicio/pausa/continuación/finalización, puntos/sesiones
@@ -86,15 +92,23 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 - Backend local: 34 pruebas SQL y 27 comprobaciones HTTP reales con tres cuentas, incluida concurrencia de cuota
   (45 peticiones → exactamente 40 aceptadas), almacenamiento privado y borrado en cascada.
   Supabase Free desplegado: cuatro migraciones, cuatro Edge Functions y 27 comprobaciones HTTPS aprobadas.
-  Android: 32 unitarias y 24 instrumentadas aprobadas en cada API 26 y 35 con conexión real a cloud;
-  Lint 0 errores/17 advertencias. Instalación y apertura comprobadas en ambas API.
+  Android: revalidación del APK `a4e74835…`, 24 instrumentadas aprobadas en cada API 26 y 35
+  con conexión real a cloud y el mismo hash antes/después; cuenta temporal eliminada verificada
+  en el servidor. Instalación y apertura comprobadas en ambas API. Últimos informes guardados:
+  32 unitarias y Lint 0 errores/17 advertencias, no repetidos en esta revalidación.
   Evidencia vigente en `docs/VERIFICACION.md`.
 - SMTP Gmail configurado y plantilla OTP desplegada, manteniendo confirmación obligatoria.
   La prueba Android rechaza un OTP incorrecto y verifica uno de Auth, sin enviar correo.
-  Todavía no se ha desplegado una clave Gemini según la última consulta. No se afirma entrega real de correo,
+  Todavía no se ha desplegado una clave Gemini según la última consulta. No se afirma
   inferencia real, retención de backups operativa ni pruebas de campo.
   Las cuentas de estas pruebas usan códigos generados por administración y verificados por el cliente,
   no códigos recibidos en Gmail.
+  El primer mensaje se reportó como no recibido. Se corrigió el asistente y pasaron 13 pruebas
+  offline; un segundo envío autorizado se recibió y el usuario introdujo su código privadamente.
+  Auth público confirmó OTP, renovación/cierre y limpieza de la cuenta: evidencia real registrada
+  en `app/build/verification/email-delivery/`, sin código administrativo ni lectura de buzón.
+  El cliente de esta comprobación es de escritorio; la aceptación Android física sigue pendiente.
+  No se desactiva la confirmación ni se evita su cuota.
   No se cambia ningún ticket a Done.
 - Las dependencias no equivalen a completar el resto de PF-012 ni reasignar todo el trabajo del equipo.
 

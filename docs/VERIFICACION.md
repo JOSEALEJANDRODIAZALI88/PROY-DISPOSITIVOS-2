@@ -1,6 +1,92 @@
 # PaceFit AI — Registro de verificación
 
-## Recompilación tras la publicación — 25/11/2026
+## Herramientas de aceptación y respaldo de aplicación — 25/11/2026
+
+- **51 pruebas Python aprobadas**, sin errores ni omisiones:
+  `python -m unittest discover -s scripts -p 'test_*.py'`.
+  Incluyen 13 de correo, 8 SMTP, 7 de tiempos GPS, 12 de respaldos y 11 de
+  diarios de cuentas temporales/validación de IA. HTTP/SMTP/IA se prueban con dobles;
+  DPAPI Windows y la recomprensión de un JPEG sintético se ejecutan realmente.
+  Estas 51 no son las 32 unitarias Android ni acreditan inferencia o GPS físico.
+- `python scripts/check-gemini.py --check-ui`: controles verificados sin imágenes
+  personales, credenciales, acceso al portapapeles ni inferencia.
+- **Ensayo real de datos de aplicación aprobado**:
+  `python scripts/cloud-backup.py rehearse`.
+  Evidencia final:
+  `app/build/verification/application-backup/result-8da0fe5c86cc4a8d96fc62edfe8f4c00.json`,
+  registrada `2026-11-26T02:35:37.548230+00:00` (25/11 en la zona local).
+  Se cifró/descifró con DPAPI una copia de dos cuentas sintéticas propias y sus fotos;
+  se borró una por el endpoint real, se excluyó del plan y se restauró la restante
+  en PostgreSQL 17 aislado. Se comprobaron un registro, 10 puntos generados,
+  uso/cuota no vacíos y la foto restaurada con SHA-256 correcto.
+  Caducidad/purga de 29 días comprobadas con reloj adelantado solo en una copia temporal.
+  Ambas cuentas se eliminaron con verificación; el archivo de ese ensayo se retiró
+  antes de escribir el resultado final.
+- Un ensayo previo se interrumpió por reinicio, sin contarse como aprobado.
+  Se recuperaron únicamente sus dos identificadores propios: uno ya estaba borrado,
+  el otro se limpió tras comprobar su etiqueta administrativa. Se añadieron diarios
+  durables sin contraseñas/tokens para recuperar futuros intentos ambiguos.
+- **Límites:** no se restauró producción, Auth ni backups/PITR del proveedor.
+  No se instaló una purga diaria automática; la operación integral sigue pendiente.
+  Procedimiento y límites: [RESPALDOS.md](RESPALDOS.md).
+- El analizador SQLite de tiempos no consulta coordenadas/salud ni acredita pantalla
+  apagada o teléfono real. El usuario indicó que ahora no tiene teléfono disponible:
+  no se ejecutó ni se marca aprobada la aceptación física.
+- El asistente de cinco fotos está implementado y probado sin IA real; exige secretos
+  configurados y consentimiento antes de enviar imágenes. Falta la clave nueva privada
+  y registrar las inferencias/revisiones reales. No se utiliza la clave expuesta en chat.
+- No se modificó ni recompiló el APK en esta etapa: conserva `a4e74835…` y las
+  24 instrumentadas aprobadas por API de la sección siguiente. Unitarias/Lint Android
+  continúan como informes guardados, no como ejecuciones nuevas.
+
+## Revalidación del APK local y recepción real Gmail aprobada — 25/11/2026
+
+- Se verificó el APK que existía al retomar: `0.3.0-beta.1`, código 3, **18.736.774 bytes**.
+  SHA-256: `a4e74835603ee118da5990871012d897ba5270194866e5fc555086a8ddb06d21`.
+- **24 instrumentadas aprobadas en API 35 y 24 en API 26**, ninguna omisión ni fallo:
+  24 casos distintos y 48 ejecuciones. Hash del APK y del APK de pruebas verificado
+  antes y después de cada ejecución; ambos dispositivos usaron exactamente el mismo binario.
+- Incluyen rechazo/aceptación OTP, login HTTPS, publicación con puntos de servidor,
+  reapertura de sesión, borrado de cuenta y confirmación administrativa de que Auth ya no
+  contiene la cuenta temporal. No se inyecta la clave de servidor al Android.
+- Firma v2 verificada con un firmante; configuración HTTPS y rol público `anon` comprobados
+  sin imprimir claves. Apertura adicional en API 26: `Status: ok`, **1.894 ms** de tiempo total;
+  no acredita rendimiento físico de referencia.
+- Informes actuales: `app/build/verification/cloud-api{26,35}/instrumentation.txt`
+  y `artifact.json`. Los de `d197592d…` se conservaron en
+  `app/build/verification/cloud-d197592dc528-api{26,35}/`.
+- Se utilizó `scripts/verify-android.py`, sin nueva compilación ni ejecución de unitarias/Lint.
+  Los últimos informes guardados siguen registrando **32 unitarias y Lint 0/17**;
+  los metadatos distinguen expresamente esos informes de las instrumentadas recién ejecutadas.
+  No se infiere qué proceso produjo el APK encontrado ni se le adjudica una compilación no ejecutada.
+- Se autorizó el uso y cierre del emulador abierto por Android Studio; el segundo fue el AVD
+  de pruebas dedicado API 26. Ambos se cerraron sin borrar los datos del AVD.
+- **Primer intento de correo — no aprobado:** el formulario se cerró sin evidencia de éxito y el usuario
+  informó «No llegó el correo». Auth registra una solicitud `/signup` aceptada (200), no una
+  prueba de recepción. No se desactivó confirmación ni se aumentó el límite de dos envíos/hora.
+  La prueba SMTP de diagnóstico terminó desconectada en la autenticación, sin enviar mensajes;
+  no permite afirmar que Gmail aceptara las credenciales ni que el servidor no pueda enviar.
+- Se corrigió el asistente de correo para aceptar respuestas directas y envueltas de GoTrue,
+  manteniendo comprobación de alias/ejecución propia, ausencia de sesión antes de confirmar y
+  limpieza solo de su cuenta. **13 pruebas offline aprobadas**, con dobles de prueba;
+  controles enmascarados del formulario verificados sin portapapeles, red ni credenciales.
+  Se añadió búsqueda en Gmail incluyendo Spam/Todos; cada nuevo envío exige consentimiento.
+  Solo código recibido e introducido por el usuario más verificación real generan evidencia de éxito.
+- **Segundo intento — APROBADO:** el usuario mostró el mensaje recibido en Gmail y completó
+  la introducción privada del código; la interfaz mostró APROBADO y se verificó el JSON
+  `app/build/verification/email-delivery/result-e737162e457c4854b909b07db477b03a.json`,
+  registrado el **25/11/2026 a las 14:46:29 (-04)**. Confirma solicitud de correo,
+  código recibido introducido por el usuario, OTP validado por Auth público, renovación/cierre
+  de sesión y borrado verificado de la cuenta temporal. `admin_generated_otp: false`.
+  El registro no contiene dirección, contraseña, código ni tokens; no se copia la captura sensible
+  al repositorio ni se utiliza su código por el agente.
+  Esta prueba real corresponde al asistente de escritorio: no acredita todavía el recorrido
+  de correo desde la UI Android en teléfono físico.
+- Gemini y la aceptación física siguen pendientes; guía: [ACEPTACION_FISICA.md](ACEPTACION_FISICA.md).
+  Esta actualización incorpora los asistentes y la documentación posteriores a la publicación
+  histórica, sin convertir esas comprobaciones pendientes en aprobadas.
+
+## Histórica: recompilación tras la publicación — 25/11/2026
 
 - Publicación funcional en `integrante-4-diaz`: `0d65710`; documentación de publicación: `805a42e`.
 - Se revisaron los ajustes de toolchain JDK 21 (`settings.gradle.kts` y
@@ -8,7 +94,7 @@
   `:app:assembleDebug :app:testDebugUnitTest :app:lintDebug :app:assembleDebugAndroidTest`.
 - Resultado: **BUILD SUCCESSFUL**, 32 unitarias aprobadas, sin fallos ni omisiones;
   Lint **0 errores y 17 advertencias**. APK instrumentado compilado.
-- APK local actual: `app/build/outputs/apk/debug/app-debug.apk`, `0.3.0-beta.1`, código 3,
+- APK de esa recompilación: `app/build/outputs/apk/debug/app-debug.apk`, `0.3.0-beta.1`, código 3,
   **18.738.004 bytes**.
 - SHA-256: `6dd4b09edc6eda299d4233a6cac4632bc8e2fc7058304c4f522a3a2947da1ac9`.
 - Firma v2 verificada, un firmante; BuildConfig conserva la URL HTTPS del proyecto autorizado
@@ -45,7 +131,8 @@ Artefacto instrumentado de esta ampliación, anterior a la recompilación:
 - `app/build/outputs/apk/debug/app-debug.apk`, `0.3.0-beta.1`, código 3, **19.168.774 bytes**.
 - SHA-256: `d197592dc5282e4a03630a37b83b18555d0c16252d4eca151613ce47cf198405`.
 - Firma v2 verificada con `apksigner`, un firmante.
-- Evidencia por dispositivo: `app/build/verification/cloud-api26/` y `cloud-api35/`,
+- Evidencia archivada por dispositivo: `app/build/verification/cloud-d197592dc528-api26/`
+  y `cloud-d197592dc528-api35/`,
   cada uno con `instrumentation.txt` y `artifact.json` del mismo SHA.
 - Apertura adicional en API 26: `am start -W`, `Status: ok`, **1.553 ms** de tiempo total.
   No acredita rendimiento en un teléfono físico de referencia.

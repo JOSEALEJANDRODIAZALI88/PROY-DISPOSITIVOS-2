@@ -9,12 +9,18 @@
 ## Resumen
 
 La aplicación Android, la base SQLite y el servidor Supabase están implementados.
-El flujo se probó contra el servidor real en Android 8 y Android 15 con el APK instrumentado
-anterior. La recompilación actual pasó compilación, 32 unitarias y Lint; requiere repetir
-las pruebas instrumentadas sobre su nuevo hash.
+El APK local actual se probó de nuevo contra el servidor real en Android 8 y Android 15:
+24 pruebas aprobadas en cada API, con el mismo hash antes y después de las ejecuciones.
+Los últimos informes de unitarias y Lint registran 32 aprobadas y 0 errores/17 advertencias;
+no se volvieron a ejecutar en esta etapa ni se invocó otra compilación.
 **La entrega original todavía no está cerrada al 100 %:** faltan conectar y probar
-Gemini, comprobar la llegada real del correo y completar la aceptación en teléfonos físicos.
-La actualización está publicada en [GitHub, rama `integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz).
+Gemini y completar la aceptación en teléfonos físicos, incluido el flujo de correo desde el APK.
+La recepción real Gmail y la confirmación pública ya aprobaron mediante el asistente de escritorio.
+También aprobaron el respaldo cifrado de datos de aplicación y su ensayo de restauración
+aislada. Esto no equivale a recuperar Auth/PITR ni a validar toda la retención del proveedor.
+Repositorio e historial: [GitHub, rama `integrante-4-diaz`](https://github.com/JOSEALEJANDRODIAZALI88/PROY-DISPOSITIVOS-2/tree/integrante-4-diaz).
+Esta actualización incorpora los asistentes, la guía física, la revalidación del APK,
+la recepción real de correo y el ensayo de respaldo, sin cerrar los pendientes externos.
 
 ## 1. Lo que ya está implementado
 
@@ -49,11 +55,14 @@ validado en campo. Las pruebas GPS ejecutadas utilizaron posiciones simuladas.
 - [x] Pantalla para confirmar el correo mediante código y solicitar otro código.
 - [x] Plantilla de correo OTP desplegada; el servidor utiliza **8 dígitos**.
 - [x] Gmail SMTP configurado, manteniendo obligatoria la confirmación del correo.
+- [x] Correo real recibido por el usuario, OTP público confirmado, sesión renovada/cerrada
+  y cuenta temporal eliminada, comprobados con el asistente de escritorio.
 - [x] Seguridad RLS, permisos restringidos y almacenamiento privado de fotografías.
 - [x] Borrado de cuenta, registros y fotografías, con recuperación mediante recibo y purga local.
 - [x] Secretos del servidor separados del APK; Android solo utiliza la configuración pública.
 
-**Límite:** SMTP configurado y OTP verificado no demuestran que un mensaje haya llegado a Gmail.
+**Límite:** la recepción real se probó desde el asistente de escritorio, no desde un teléfono
+físico. Los OTP administrativos de las instrumentadas no son la evidencia de esa recepción.
 
 ### Ciudad, plogging e incidencias
 
@@ -67,18 +76,34 @@ validado en campo. Las pruebas GPS ejecutadas utilizaron posiciones simuladas.
 
 **Límite:** el gateway y su cuota están implementados, pero todavía no se ha probado inferencia real.
 
+### Herramientas de aceptación y respaldo
+
+- [x] Analizador de tiempos GPS sobre copia SQLite privada, sin imprimir coordenadas ni salud.
+- [x] Copia cifrada DPAPI de datos cloud de aplicación, excluyendo salud/rutas/contraseñas/sesiones.
+- [x] Ensayo real de restauración en PostgreSQL aislado y fotos temporales verificadas.
+- [x] Exclusión de cuenta eliminada, puntos recalculados y recuperación de uso/cuota no vacíos.
+- [x] Rechazo de copias caducadas y purga acotada de prueba, con límite de 29 días.
+- [x] Diario durable para recuperar solo cuentas temporales propias tras una interrupción.
+- [x] Asistente privado de cinco fotos para Gemini, con recomprensión sin EXIF y revisión manual.
+
+El asistente de IA está preparado, no probado con inferencias reales. La copia DPAPI es
+de aplicación, no Auth/PITR; no hay tarea diaria instalada ni recuperación integral aceptada.
+
 ## 2. Pruebas que ya aprobaron
 
 | Comprobación | Resultado registrado |
 |---|---|
-| Pruebas unitarias Android | 32 aprobadas |
-| Pruebas instrumentadas en Android 8 / API 26 | 24 aprobadas en el artefacto anterior |
-| Pruebas instrumentadas en Android 15 / API 35 | 24 aprobadas en el artefacto anterior |
-| Lint del APK actual | 0 errores y 17 advertencias |
+| Último informe de unitarias Android, no repetido en esta etapa | 32 aprobadas |
+| Pruebas instrumentadas en Android 8 / API 26 | 24 aprobadas en el APK actual `a4e74835…` |
+| Pruebas instrumentadas en Android 15 / API 35 | 24 aprobadas en el mismo APK actual |
+| Último informe Lint, no repetido en esta etapa | 0 errores y 17 advertencias |
 | Pruebas SQL del backend local | 34 aprobadas |
 | Comprobaciones HTTP del backend local | 27 aprobadas |
 | Comprobaciones HTTPS contra Supabase cloud | 27 aprobadas |
 | Firma del APK actual | V2 verificada, un firmante |
+| Correo real → OTP público → renovación/cierre → limpieza de prueba | Aprobado en el asistente de escritorio |
+| Herramientas Python de aceptación | 51 aprobadas; IA/SMTP/HTTP con dobles, no campo real |
+| Copia cifrada → cuenta borrada excluida → datos/foto restaurados aisladamente | Aprobado; no recuperación del proveedor/Auth |
 
 Son **24 casos instrumentados ejecutados en dos versiones: 48 ejecuciones**, no 48 casos distintos.
 Las comprobaciones del backend se registraron en sus etapas correspondientes; el detalle y los
@@ -100,15 +125,24 @@ Los OTP de prueba se generaron por administración para cuentas desechables: **n
 
 **Bloqueo actual:** la última consulta no encontró clave ni modelo Gemini desplegados.
 No enviar claves por chat ni guardarlas en este documento, Git o el APK. No activar facturación.
+Asistente preparado: `python scripts/check-gemini.py`. Exige exactamente cinco fotos
+autorizadas y revisión antes de registrar éxito; no publica fotos ni fabrica respuestas.
 
-### B. Comprobar el correo real
+### B. Correo real — servicio aprobado; aceptación Android pendiente
 
+- [x] Solicitar un correo por registro público normal, sin OTP administrativo.
+- [x] Recibir el mensaje real en Gmail y pegar el código privadamente.
+- [x] Verificar el código mediante Auth público, renovar/cerrar sesión y borrar la cuenta de prueba.
 - [ ] Crear una cuenta propia desde el APK con un correo al que se tenga acceso.
-- [ ] Comprobar que llega el mensaje de confirmación, revisando también spam.
-- [ ] Introducir el código de ocho dígitos en **Perfil → Cuenta**.
-- [ ] Comprobar acceso, reenvío cuando corresponda, cierre y reapertura de sesión.
+- [ ] Completar también ese recorrido desde **Perfil → Cuenta** en un Android físico.
+- [ ] Comprobar acceso, reenvío cuando corresponda, cierre y reapertura desde el APK.
 
-**Ya está hecho:** configuración Gmail y plantilla OTP. **Falta:** demostrar entrega y uso real del correo.
+El primer intento se reportó como no recibido y se corrigió el asistente para reconocer la respuesta
+directa de GoTrue. En el siguiente envío autorizado, el usuario mostró el correo recibido y
+completó la verificación: resultado **APROBADO**, registrado el 25/11/2026 a las 14:46:29 (-04).
+La evidencia JSON sin correo, código ni tokens está en `app/build/verification/email-delivery/`.
+Es una prueba real independiente de las 13 offline del asistente; no implica acceso al buzón
+por el agente ni sustituye la aceptación Android.
 
 ### C. Validar GPS y transporte en un teléfono
 
@@ -120,13 +154,17 @@ No enviar claves por chat ni guardarlas en este documento, Git o el APK. No acti
 - [ ] Revisar funcionamiento con sensores ausentes y permisos denegados o aproximados.
 
 Estas pruebas requieren participación con un teléfono real; el emulador no las sustituye.
+El usuario indicó que **ahora no tiene teléfono**. Está disponible
+`scripts/check-field-recording.py` para medir los tiempos de una copia privada cuando exista
+la grabación; datos sintéticos no cierran este pendiente.
 
 ### D. Aceptación y operación
 
 - [ ] Validar el uso con dos teléfonos y cuentas propias: mapa compartido y acciones de autor.
 - [ ] Completar pruebas físicas de reinicio, uso sin conexión y recuperación al volver la red.
 - [ ] Revisar texto grande, accesibilidad y errores de almacenamiento/espacio insuficiente.
-- [ ] Validar operativamente backups, restauración y retención máxima de 30 días tras borrar una cuenta.
+- [x] Implementar copia cifrada de aplicación y comprobar restauración aislada sin la cuenta borrada.
+- [ ] Completar recuperación integral/proveedor, operación diaria y retención de todas las copias.
 - [ ] Mantener el límite Free: no habilitar servicios de pago para completar esas comprobaciones.
 - [ ] Registrar evidencias antes de marcar los tickets como Done.
 
@@ -137,18 +175,23 @@ Estas pruebas requieren participación con un teléfono real; el emulador no las
 - [x] Preparar el commit y verificar su subida a `integrante-4-diaz`.
 - [x] No sobrescribir `main` ni `primera-version`.
 
-El rediseño, la integración cloud/OTP, las pruebas y esta documentación se publicaron
-en el commit `0d657107cc8db0cde9cf86a89dad4f242166cb42`. Se verificó el mismo hash
+La publicación base del rediseño, integración cloud/OTP y pruebas corresponde
+al commit `0d657107cc8db0cde9cf86a89dad4f242166cb42`. Se verificó el mismo hash
 en la rama remota; `primera-version` conserva su commit anterior y no se creó ni modificó `main`.
-La publicación no cierra los pendientes Gemini, correo real ni aceptación física.
+La actualización posterior añade las herramientas y evidencias descritas en este documento.
+Publicar código no cierra por sí solo la inferencia Gemini, la recuperación integral
+ni la aceptación física.
 
-### F. Validación de la recompilación actual
+### F. Revalidación del APK local — completada
 
-- [x] Compilar APK y APK de pruebas; ejecutar 32 unitarias y Lint.
+- [x] Conservar por separado la compilación e informes anteriores de 32 unitarias y Lint.
 - [x] Verificar firma y configuración HTTPS pública.
-- [ ] Repetir las 24 instrumentadas en API 26/35 con el nuevo APK.
+- [x] Ejecutar las 24 instrumentadas en API 26/35 con el APK actual y comprobar hashes.
+- [x] Verificar en el servidor el borrado de las cuentas temporales de ambas ejecuciones.
 
-Los informes anteriores corresponden al hash `d197592d…`, no al nuevo binario.
+Los informes actuales corresponden al hash `a4e74835…`. Los de `d197592d…` se archivaron
+sin sobrescribir su evidencia histórica. No se recompiló ni se repitieron unitarias/Lint
+durante esta revalidación.
 Usar únicamente emuladores desechables sin datos personales para la instrumentación.
 
 ## 4. Estado de los tickets incluidos
@@ -157,10 +200,10 @@ Usar únicamente emuladores desechables sin datos personales para la instrumenta
 |---|---|---|
 | PF-001 | Perfil local, SQLite, edición y borrado | Aceptación física completa; continúa en Testing |
 | PF-007 | Detector integrado con sesiones y rutas | Validación de transporte y distancias en campo |
-| PF-011 | RLS, Storage privado y borrado de cuenta probado | Aceptación operativa de backups/retención |
+| PF-011 | RLS, Storage, borrado y ensayo de respaldo cifrado de aplicación probados | Recuperación integral/proveedor y purga operativa |
 | PF-015 | Registros, fotos, publicación, mapa y puntos de servidor | Gemini real y fotografías reales |
 | PF-003, dependencia necesaria | Grabación FGS, pausa, rutas y sensores opcionales | Prueba física prolongada |
-| PF-010, dependencia necesaria | Auth, sesión y verificación OTP | Entrega real del correo |
+| PF-010, dependencia necesaria | Auth/OTP Android; correo recibido y sesión probados en escritorio | Completar correo y sesión en teléfono físico |
 | PF-012, dependencia necesaria | Tarea de fotografía y cuota | Clave e inferencia; las otras tareas siguen en backlog |
 
 No se consideran completados BLE, comidas, cálculos de salud, asesor semanal, chat,
@@ -170,13 +213,14 @@ zonas competitivas, PDF ni módulos opcionales. No forman parte de esta entrega 
 
 - **APK:** `app/build/outputs/apk/debug/app-debug.apk`.
 - **Tipo:** compilación debug para desarrollo, no publicación Play Store.
-- **Tamaño actual:** 18.738.004 bytes.
-- **SHA-256 actual:** `6dd4b09edc6eda299d4233a6cac4632bc8e2fc7058304c4f522a3a2947da1ac9`.
-- **Último APK instrumentado:** `d197592dc5282e4a03630a37b83b18555d0c16252d4eca151613ce47cf198405`.
+- **Tamaño actual:** 18.736.774 bytes.
+- **SHA-256 actual e instrumentado en ambas API:** `a4e74835603ee118da5990871012d897ba5270194866e5fc555086a8ddb06d21`.
 - [Evidencias y limitaciones](docs/VERIFICACION.md).
 - [Configuración del servidor y asistentes privados](docs/SERVIDOR.md).
 - [Tablas SQLite y directorios](docs/SQLITE.md).
 - [Tickets y requisitos originales](TICKETS.md).
+- [Guía de aceptación con un teléfono físico](docs/ACEPTACION_FISICA.md).
+- [Respaldo cifrado, ensayo de restauración y límites](docs/RESPALDOS.md).
 
 Este resumen describe el APK y las evidencias indicados. Una modificación posterior requiere
 su propia verificación; no convierte automáticamente los pendientes en aprobados.

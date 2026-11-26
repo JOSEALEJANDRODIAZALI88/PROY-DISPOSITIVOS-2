@@ -9,12 +9,19 @@ El **25/11/2026**, con autorización del propietario, se creó y desplegó **Pac
 - Cuatro migraciones y cuatro Edge Functions desplegadas; bucket `city-photos` privado y cron de retención activo.
 - 27 comprobaciones reales por HTTPS aprobadas con tres cuentas desechables propias.
 - Confirmación por correo **activada**, mínimo 10 caracteres. SMTP Gmail guardado;
-  entrega real e inferencia Gemini aún pendientes.
+  recepción real, OTP público, renovación/cierre y limpieza de cuenta aprobados con el asistente
+  de escritorio el 25/11/2026. Gemini y aceptación Android física siguen pendientes.
+
+Herramientas posteriores: [RESPALDOS.md](RESPALDOS.md) documenta el respaldo de
+aplicación cifrado y su ensayo aislado aprobado, con límites de recuperación y retención.
+No es una restauración Auth/PITR ni habilita planes de pago.
 
 Las cuentas de prueba se crean confirmadas mediante administración **solo para verificar la integración**;
 no se desactiva la confirmación para usuarios reales ni se considera probado el envío de correo.
-Las pruebas locales siguen disponibles en Docker. Ni una prueba local ni la prueba cloud acreditan
-inferencia Gemini, entrega SMTP o eliminación operativa de backups del proveedor.
+Las pruebas locales siguen disponibles en Docker. Ni una prueba local ni la prueba cloud con
+códigos administrativos acreditan inferencia Gemini, entrega SMTP o eliminación operativa de
+backups del proveedor. La recepción real tiene evidencia independiente en
+`app/build/verification/email-delivery/`.
 
 ### Administración segura desde esta máquina Windows
 
@@ -36,6 +43,18 @@ inyecta por stdin una cuenta temporal y verifica el cliente Android real; nunca 
 Los usuarios y objetos de cada prueba se limpian por sus propios UUID, sin reiniciar el proyecto.
 `status` muestra únicamente indicadores de configuración, nunca claves ni contraseñas.
 
+Para repetir las instrumentadas y vincular la evidencia a los APK exactos:
+
+```powershell
+python scripts/verify-android.py emulator-5556
+```
+
+Solo usar un emulador descartable autorizado, API 26/35, serial 5554/5556. El asistente
+registra el hash del APK principal y del APK de pruebas antes/después; exige 24 casos aprobados
+y que la cuenta temporal realmente haya desaparecido de Auth. Conserva informes anteriores
+de otro hash. No compila ni vuelve a ejecutar unitarias/Lint: referencia sus informes guardados.
+La instalación manual `-r` evita el desinstalado de Gradle, pero no autoriza usar datos personales.
+
 ### Confirmación dentro de Android, sin enlaces de retorno
 
 `supabase/templates/confirmation.html` envía un código de un solo uso, no una URL con tokens.
@@ -54,6 +73,72 @@ tras una respuesta válida. «Solicitar otro código» respeta los límites del 
 La prueba Android usa un OTP administrativo desechable, sin enviar correo: no acredita Gmail.
 Para aceptar el envío hay que crear una cuenta propia en la app, recibir el mensaje y confirmar
 el código allí, nunca en el chat. El código no se introduce en `cloud-admin.py`.
+
+### Comprobar entrega sin exponer el buzón
+
+```powershell
+python scripts/check-email-delivery.py
+```
+
+El formulario privado muestra un alias único del Gmail ya configurado. Verificar el destinatario,
+marcar autorización y pulsar **Enviar correo de prueba**. Solo se solicita un mensaje, por el
+registro público normal: no se genera un OTP administrativo ni se desactiva la confirmación.
+Revisar Recibidos/Spam/Todos y pegar el código **solo en esa ventana**, nunca en el chat.
+El botón **Buscar PaceFit en Gmail** abre una búsqueda incluyendo Spam; elegir la cuenta
+que coincide con el destino mostrado y el mensaje más reciente de este intento, no uno anterior.
+Se comprueban tanto las respuestas directas de GoTrue como las envueltas en `user`, siempre
+sin sesión previa a la confirmación y con la etiqueta de esta cuenta temporal.
+
+La herramienta verifica OTP, renovación/cierre de sesión y eliminación de su cuenta desechable.
+No accede al buzón, no pide la contraseña Gmail y nunca borra una cuenta existente o Google.
+Al cerrar antes de completar, intenta limpiar únicamente su propio alias/UUID con etiqueta de
+ejecución. Los informes exitosos, sin correo/código/tokens, quedan en
+`app/build/verification/email-delivery/`. Error de red o aceptación del envío no equivalen a entrega.
+La prueba acredita el servicio desde un cliente de escritorio; aún se debe comprobar el flujo
+Android en un teléfono siguiendo [ACEPTACION_FISICA.md](ACEPTACION_FISICA.md).
+
+Pruebas offline del asistente, sin enviar mensajes:
+
+```powershell
+python scripts/check-email-delivery.py --check-ui
+python scripts/test_email_delivery.py
+```
+
+Las 13 pruebas offline cubren aceptación de ambos formatos, rechazo de confirmación omitida
+o identidad ajena, limpieza por identidad/etiqueta propia y que los fallos no generen un aprobado.
+No envían mensajes ni acreditan recepción. El primer intento real fue reportado como no recibido;
+no se ha cambiado el límite de dos mensajes/hora. No repetir envíos en bucle ante un 429.
+
+### Cinco fotos reales con Gemini, solo tras conectar una clave nueva
+
+```powershell
+python scripts/check-gemini.py
+```
+
+El formulario exige cinco JPG/PNG distintos, categoría y consentimiento de envío gratuito.
+Antes de cualquier inferencia comprueba que los secretos estén desplegados y prepara
+todas las fotos en memoria: orientación, lado máximo 1.600 y JPEG nuevo sin EXIF de origen.
+No admite más de 20 MB/40 megapíxeles por fuente ni más de 2 MB por JPEG preparado.
+No se publican fotos ni se guardan copias; no seleccionar personas, matrículas, salud
+ni información privada. Se envían al gateway/Google, no a un servicio simulado.
+
+Utiliza una cuenta temporal propia, máximo cinco llamadas por intento y ningún reintento
+automático. Tras las respuestas y limpieza de la cuenta, revisar las originales privadamente,
+corregir las etiquetas y marcar cada revisión. Una foto marcada insegura impide acreditar
+la aceptación. El JSON en `app/build/verification/gemini/` omite fotos, rutas de archivos,
+explicaciones privadas, claves y tokens. Esa prueba de escritorio tampoco acredita UI Android.
+Sin secretos/consentimiento/revisión no se genera evidencia de inferencia aprobada.
+
+Comprobaciones de herramientas sin credenciales ni inferencia:
+
+```powershell
+python scripts/check-gemini.py --check-ui
+python -m unittest discover -s scripts -p 'test_*.py'
+```
+
+El analizador de tiempos GPS está documentado en [ACEPTACION_FISICA.md](ACEPTACION_FISICA.md).
+Los respaldos de aplicación y recuperación de intentos interrumpidos se explican en
+[RESPALDOS.md](RESPALDOS.md). No ejecutar recuperación de fixtures mientras otra prueba esté activa.
 
 ### Entrada privada de SMTP
 

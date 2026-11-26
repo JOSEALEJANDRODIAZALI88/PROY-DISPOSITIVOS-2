@@ -33,14 +33,17 @@ Sus cuatro migraciones y cuatro Edge Functions ya están desplegadas; **27 compr
 contra el servidor cloud aprobaron**, con cuentas desechables propias.
 El APK ya está recompilado y probado contra ese servidor desde Android 8 y 15.
 La URL y clave pública están configuradas localmente, nunca la clave de servidor.
-**Pendientes: entrega real de correo, clave Gemini e inferencia real.** SMTP Gmail está guardado;
-la confirmación por código en Cuenta ya pasó las pruebas contra Supabase en Android 8 y 15.
+**Pendientes: clave Gemini, inferencia real y aceptación en teléfonos físicos.**
+SMTP Gmail y la confirmación por código en Cuenta pasaron sus pruebas; además, el usuario recibió
+un correo real y completó OTP, renovación/cierre y limpieza de cuenta mediante el asistente
+de escritorio. Falta completar ese recorrido desde un teléfono físico.
 La confirmación de correo
 sigue activada; no se desactiva para aparentar un registro funcional.
 Sin configuración, Cuenta dice «Servidor sin conectar»: no inventa sesiones, mapas compartidos ni IA.
 El perfil, las rutas y los registros urbanos privados funcionan sin cuenta.
 
-Las pruebas de campo GPS y la aceptación con correos/fotografías reales requieren ejecución externa.
+Las pruebas de campo GPS y la aceptación del flujo Android con correo/fotografías reales requieren
+participación con teléfonos físicos.
 La heurística de transporte no es una clasificación clínicamente validada ni demuestra
 una recogida real. No se afirma «100 % verificado» por compilar.
 Evidencia, comandos y pendientes: [`docs/VERIFICACION.md`](docs/VERIFICACION.md).
@@ -113,10 +116,24 @@ La prueba Android cloud requiere la cuenta desechable del controlador descrito e
 El caso cloud rechaza un código incorrecto y acepta uno generado por Auth para la cuenta de
 prueba. Esto comprueba la verificación OTP, no la entrega de un mensaje por Gmail.
 Resultados, APK y límites en `docs/VERIFICACION.md`.
-La recompilación posterior a la publicación volvió a aprobar las 32 unitarias y Lint.
-Generó un APK distinto: las 24 instrumentadas por API corresponden al artefacto previo,
-no se atribuyen al nuevo hash. Véanse el SHA vigente y esa validación pendiente en
+La revalidación posterior ejecutó de nuevo las 24 instrumentadas en cada API sobre el APK
+local actual `a4e74835…`, con hashes iguales antes/después y borrado de la cuenta de prueba
+verificado también en el servidor. No invocó Gradle ni repitió unitarias/Lint: los 32/0/17
+son los últimos informes guardados de esas tareas. Véanse el SHA vigente y las etapas en
 [`ESTADO_ENTREGA.md`](ESTADO_ENTREGA.md).
+La segunda prueba de correo real aprobó: recepción por el usuario, OTP público,
+renovación/cierre de sesión y eliminación verificada de su cuenta desechable, sin OTP administrativo.
+Registro sin datos sensibles en `app/build/verification/email-delivery/`; cliente de escritorio,
+no una prueba de la UI Android en teléfono.
+Guía para el GPS y otras pruebas físicas: [`docs/ACEPTACION_FISICA.md`](docs/ACEPTACION_FISICA.md).
+
+Las herramientas posteriores aprobaron **51 pruebas Python** y un ensayo real de
+respaldo cifrado/restauración de aplicación en PostgreSQL aislado, excluyendo una
+cuenta realmente eliminada. No restaura producción, Auth ni PITR y no instala
+purga automática: [`docs/RESPALDOS.md`](docs/RESPALDOS.md).
+Hay un analizador SQLite de tiempos GPS y un asistente privado de cinco fotos Gemini;
+ni los datos sintéticos ni las pruebas offline acreditan campo/inferencia.
+El usuario no dispone ahora de teléfono; esa aceptación permanece pendiente.
 
 ## Privacidad
 
