@@ -1,5 +1,102 @@
 # PaceFit AI — Registro de verificación
 
+## Gateway corregido: 3.8 indisponible y alternativa 3.6 operativa — 27/11/2026
+
+- El asistente de cinco fotos mostró un 503 genérico. Ese mensaje no permitía atribuir
+  por sí solo el fallo a la clave, la cuota, el proveedor o la respuesta.
+  No se leyeron las fotos originales, el campo privado ni el portapapeles.
+- El primer despliegue de esta corrección actualizó `ai-gateway`, versión 3, en el proyecto Free autorizado.
+  Conserva JWT, perfil activo, recomprensión/validación JPEG, consentimiento del cliente
+  y cuota atómica de 40/h. En ese despliegue inicial no se cambiaron secretos, modelo,
+  facturación ni otros proyectos; el cambio manual posterior de modelo se registra abajo.
+  El cliente de aceptación conserva solo códigos de error permitidos, nunca cuerpos libres.
+- La nueva política usa esquema JSON, salida máxima 2048 y razonamiento `LOW` para el
+  modelo 3.x configurado; rechaza truncamientos, respuestas inválidas y bloqueos de seguridad,
+  y no devuelve partes de pensamiento. El presupuesto anterior de 300 podía agotarse,
+  pero **no se afirma que fuese la causa del primer error**.
+- **80 pruebas Python aprobadas**, sin errores u omisiones: 75 anteriores y cinco nuevas
+  sobre códigos seguros, evidencia de fallo que nunca acredita aceptación y bloqueo del
+  antiguo smoke cuando Gemini ya está configurado. Ese bloqueo precede a leer claves o lanzar Node.
+  **12 pruebas Node/TypeScript aprobadas**, con Google simulado: petición, esquema,
+  compatibilidad de razonamiento, respuestas, truncamiento/seguridad y cero reintentos.
+  La comprobación de tipos Deno de las **cuatro Edge Functions** también aprobó.
+  La comprobación de controles del asistente aprobó sin fotografías ni credenciales.
+- Una única prueba diagnóstica posterior usó el pequeño JPEG sintético público del repositorio,
+  no las fotos elegidas por el usuario, y una cuenta desechable propia. Recibió HTTP 503
+  `GEMINI_UNAVAILABLE`; no se repitió ni publicó la imagen. La cuenta se eliminó y comprobó.
+  La consulta sanitizada de su evento del gateway identificó **HTTP 503 del proveedor,
+  estado Google `UNAVAILABLE`**. Esto identifica la prueba controlada actual, no demuestra
+  retrospectivamente la causa de la primera captura.
+  Evidencia sin datos privados:
+  `app/build/verification/gemini/gateway-probe-bd4539f3242446889843cdc7a1771139.json`,
+  intento `2026-11-27T13:37:19.577231+00:00`.
+- **Cero inferencias exitosas confirmadas en esa prueba; cinco fotos no aprobadas.**
+  La clasificación manual continúa disponible. Los errores tipados del asistente escriben
+  recibos de fallo, no éxitos. No se activaron pagos ni se reintentaron las fotos del usuario.
+- Se comprobó por HTTPS privado que la clave permite 3.6 Flash y mediante la documentación
+  oficial que el modelo admite nivel gratuito. Se anunció y seleccionó manualmente
+  `gemini-3.6-flash`, cambiando solo ese secreto y su copia privada local, no la clave.
+  No se añadió fallback automático ni se activó facturación.
+- **Una inferencia sintética real con 3.6 aprobó**: el gateway devolvió `OTHER`,
+  `unsafe = false`; se verificó la eliminación de su cuenta temporal.
+  La única imagen fue el JPEG público sintético del repositorio. No se reenviaron fotos
+  del usuario ni guardaron explicaciones privadas. Evidencia:
+  `app/build/verification/gemini/alternative-model-2bcf39240c45409098f19ddd7b74e362.json`,
+  intento `2026-11-27T13:43:43.851299+00:00`. Esto comprueba la ruta real,
+  **no sustituye cinco imágenes consentidas con revisión manual**.
+- No se cambió/recompiló el APK, ni se repitieron unitarias/Lint Android. La evidencia de
+  24 pruebas en cada API sigue correspondiendo al APK `a4e74835…`. Aceptación física y
+  recuperación integral del proveedor siguen pendientes; no se inicia otro backlog.
+
+### Regresión independiente de Ciudad
+
+La comprobación de tipos conjunta detectó un acceso no acotado a `StorageError.statusCode`.
+Se corrigió mediante estrechamiento de tipo, conservando el tratamiento de conflicto 409,
+y se desplegó solo `city-submit`. No se cambiaron permisos ni cálculo de puntos.
+
+Una prueba HTTPS con una cuenta temporal propia precargó su foto sintética privada y luego
+publicó y repitió **el mismo identificador**. Aprobó: conflicto de archivo existente aceptado,
+foto sin sobrescribir, una sola fila y **20 puntos calculados por el servidor** en ambas respuestas.
+Se verificó la eliminación de la cuenta/foto de ensayo. No hubo llamadas a Gemini, fotos del
+usuario ni actividad real. Evidencia:
+`app/build/verification/city-regression/result-db9d57731397423585e8d4ac70afb044.json`.
+
+## Conexión privada Gemini al servidor confirmada — 27/11/2026
+
+- El usuario mostró «Gemini conectado al servidor. No se genero contenido» tras completar
+  el formulario privado. Se comprobó independientemente con `python scripts/cloud-admin.py status`:
+  plan Free, `geminiKeyDeployed = true`, `geminiModelDeployed = true` y archivo privado presente.
+  Confirmación de correo/SMTP/OTP siguen activos. Solo se consultaron indicadores/nombres de
+  secretos, nunca los valores, el campo privado ni el portapapeles.
+- Esto acredita configuración y la validación de modelos previa al despliegue, **no inferencia**.
+  No permite atribuir una causa concreta al rechazo genérico del intento anterior.
+  Se preparó el asistente de cinco fotos; no hay aprobación hasta realizar las llamadas con
+  consentimiento y registrar la revisión completa y limpieza de su cuenta temporal.
+- No se modificó ni recompiló el APK. Aceptación física y recuperación integral siguen pendientes.
+
+## Diagnóstico privado de validación Gemini — 27/11/2026
+
+- El usuario mostró el formulario visible, con rechazo genérico durante la consulta de modelos.
+  Ese mensaje no identifica por sí solo si la clave, los permisos, HTTPS o el código local fallaron.
+  No se leyó el campo privado ni el portapapeles; no se reutilizó una clave del chat.
+- Se unificó la validación de formulario/despliegue en `scripts/gemini_validation.py`.
+  Solo permite el endpoint HTTPS de modelos; no realiza inferencia, activa pagos ni cambia permisos.
+  La clave cruza una tubería privada y la cabecera `x-goog-api-key`, no argumentos ni URL.
+  Los errores conservan únicamente HTTP/identificadores permitidos, sin mensajes o metadatos libres
+  del proveedor. El formulario guarda solo esos diagnósticos públicos en una ruta ignorada.
+- **75 pruebas Python aprobadas**, sin errores u omisiones: las 63 anteriores y 12 nuevas
+  sobre diagnósticos redactados, TLS verificado, formatos opacos, selección de modelos y entrada
+  privada. Google se simula en estas pruebas; no acreditan que la clave del usuario funcione.
+- `configure-gemini.ps1 -CheckUi`: controles y puente real PowerShell/Python aprobados con una
+  cadena sintética inválida, sin red, clave real, portapapeles ni escritura de archivos.
+- Una consulta adicional **sin credenciales** al endpoint real recibió HTTP 403 por HTTPS
+  verificado. Acredita conectividad de ese cliente Python, no aceptación de una clave ni del
+  cliente PowerShell anterior. No se generó contenido.
+- En esta etapa faltaba reabrir el formulario y repetir la validación privada.
+  Después se completó la conexión, como consta arriba; las cinco fotos y la aceptación
+  física continúan pendientes.
+  No se modificó/recompiló el APK ni se reejecutaron unitarias/Lint Android.
+
 ## Mantenimiento local programado aprobado — 25/11/2026
 
 - `python -m unittest discover -s scripts -p 'test_*.py'`: **63 aprobadas**,

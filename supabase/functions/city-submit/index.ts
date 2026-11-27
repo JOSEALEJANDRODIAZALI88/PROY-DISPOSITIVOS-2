@@ -27,7 +27,9 @@ Deno.serve(endpoint(async req => {
   const path = `${user.id}/${id}.jpg`;
   const upload = await admin.storage.from("city-photos").upload(path, jpeg, { contentType: "image/jpeg", upsert: false });
   // A retry must not overwrite a photo already committed by a concurrent request.
-  if (upload.error && String(upload.error.statusCode) !== "409") throw new ApiError(503, "No se pudo guardar la foto");
+  const existingObject = upload.error && "statusCode" in upload.error &&
+    String(upload.error.statusCode) === "409";
+  if (upload.error && !existingObject) throw new ApiError(503, "No se pudo guardar la foto");
   const insert = await admin.from("city_entries").insert({ id, owner_id: user.id, kind, label, description,
     latitude, longitude, photo_path: path }).select("*").single();
   if (insert.error) {

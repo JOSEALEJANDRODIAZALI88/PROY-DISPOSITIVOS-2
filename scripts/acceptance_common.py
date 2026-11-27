@@ -12,6 +12,27 @@ import uuid
 ROOT = Path(__file__).resolve().parent.parent
 JOURNALS = ROOT / "supabase/.temp/acceptance-fixtures"
 
+AI_FAILURE_MESSAGES = {
+    "GEMINI_NOT_CONFIGURED": "Gemini no está configurado en el servidor.",
+    "GEMINI_QUOTA_EXHAUSTED": "Google limitó o agotó la cuota gratuita. Espera o clasifica manualmente; no actives pagos.",
+    "GEMINI_ACCESS_DENIED": "Google rechazó el acceso. Revisa permisos de la clave y verificación gratuita del proyecto.",
+    "GEMINI_REQUEST_REJECTED": "Google rechazó la configuración de la solicitud. No vuelvas a enviar aún.",
+    "GEMINI_UNAVAILABLE": "Google no está disponible temporalmente. No hubo reintentos automáticos.",
+    "GEMINI_TIMEOUT": "Google tardó demasiado. No hubo reintentos automáticos.",
+    "GEMINI_RESPONSE_TRUNCATED": "Google devolvió una respuesta incompleta. Hace falta revisar el límite de salida.",
+    "GEMINI_SAFETY_BLOCKED": "Google bloqueó esta imagen por seguridad. Elige fotos sin rostros ni datos privados.",
+    "GEMINI_INVALID_RESPONSE": "Google no devolvió una clasificación válida. No se inventó una respuesta.",
+    "AI_QUOTA_UNAVAILABLE": "El servidor no pudo comprobar la cuota local.",
+    "AI_USER_QUOTA_EXHAUSTED": "Se alcanzaron 40 consultas por hora. Clasifica manualmente.",
+}
+
+
+class AiGatewayError(RuntimeError):
+    def __init__(self, code, status):
+        self.code = code
+        self.http_status = status
+        super().__init__(AI_FAILURE_MESSAGES[code] + f" [{code}; HTTP {status}]")
+
 
 def admin_module():
     sys.dont_write_bytecode = True
@@ -43,6 +64,14 @@ class Cloud:
         except urllib.error.HTTPError as error:
             if missing_ok and error.code == 404:
                 return None
+            if path == "/functions/v1/ai-gateway":
+                try:
+                    public = json.loads(error.read(16384))
+                    code = public.get("code") if isinstance(public, dict) else None
+                except (ValueError, OSError):
+                    code = None
+                if isinstance(code, str) and code in AI_FAILURE_MESSAGES:
+                    raise AiGatewayError(code, error.code) from None
             # Provider responses may contain names, emails or tokens.
             raise RuntimeError(f"Authorized cloud request failed (HTTP {error.code}).") from None
 

@@ -9,7 +9,7 @@ import sys
 import threading
 import uuid
 
-from acceptance_common import Cloud, DisposableAccount, ROOT
+from acceptance_common import AiGatewayError, Cloud, DisposableAccount, ROOT
 
 LABELS = {"PLOGGING": ("LITTLE", "MEDIUM", "MUCH"),
           "REPORT": ("POTHOLE", "WASTE", "LIGHT", "OTHER")}
@@ -77,6 +77,18 @@ def receipt(kinds, results, reviewed_labels):
         "source_metadata_reencoded_before_upload": True, "photos_published": False,
         "disposable_account_cleanup_verified": True,
         "android_ui_acceptance_tested": False, "client": "Private desktop five-photo helper, not Android UI.",
+        "recorded_at": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+def failure_receipt(error):
+    if not isinstance(error, AiGatewayError):
+        return None
+    return {
+        "project": "ymfypllkcrqwfwihqzpf", "acceptance_approved": False,
+        "gateway_code": error.code, "http_status": error.http_status,
+        "automatic_retries": False, "photos_published": False,
+        "photo_content_paths_identity_or_keys_saved": False,
         "recorded_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -154,6 +166,15 @@ def main(check_ui=False):
         try:
             events.put(("ok", classify_five(tuple(paths), tuple(selected_kinds))))
         except RuntimeError as error:
+            diagnostic = failure_receipt(error)
+            if diagnostic:
+                try:
+                    folder = ROOT / "app/build/verification/gemini"
+                    folder.mkdir(parents=True, exist_ok=True)
+                    (folder / ("failure-" + uuid.uuid4().hex + ".json")).write_text(
+                        json.dumps(diagnostic, indent=2), encoding="utf-8")
+                except OSError:
+                    pass  # Failure to save a diagnostic must not hide the original safe error.
             events.put(("error", str(error)))  # Only locally controlled/sanitized exceptions.
         except Exception:
             events.put(("error", "No se completó la prueba; no se mostraron claves ni respuestas privadas."))

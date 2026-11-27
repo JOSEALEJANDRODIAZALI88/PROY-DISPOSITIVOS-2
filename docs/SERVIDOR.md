@@ -10,7 +10,13 @@ El **25/11/2026**, con autorización del propietario, se creó y desplegó **Pac
 - 27 comprobaciones reales por HTTPS aprobadas con tres cuentas desechables propias.
 - Confirmación por correo **activada**, mínimo 10 caracteres. SMTP Gmail guardado;
   recepción real, OTP público, renovación/cierre y limpieza de cuenta aprobados con el asistente
-  de escritorio el 25/11/2026. Gemini y aceptación Android física siguen pendientes.
+  de escritorio el 25/11/2026. La aceptación Android física sigue pendiente.
+- El **27/11/2026** el usuario completó el formulario privado Gemini; se confirmó la presencia
+  de clave/modelo en el servidor sin leer sus valores. Plan Supabase continúa Free.
+  La prueba controlada posterior recibió **HTTP 503 `UNAVAILABLE` de Google**.
+  Se seleccionó manualmente **3.6 Flash**, disponible para la clave y con cuota gratuita:
+  una inferencia sintética real aprobó. Clave intacta y sin activar pagos.
+  Las cinco fotos del usuario siguen pendientes y no se reenvían automáticamente.
 
 Herramientas posteriores: [RESPALDOS.md](RESPALDOS.md) documenta el respaldo de
 aplicación cifrado y su ensayo aislado aprobado, con límites de recuperación y retención.
@@ -36,6 +42,10 @@ python scripts/cloud-admin.py status
 # Prueba HTTPS con sus propias cuentas; requiere Gemini todavía sin configurar:
 python scripts/cloud-admin.py smoke
 ```
+
+El smoke antiguo exige IA sin configurar y ahora se detiene automáticamente si existe cualquiera
+de los secretos Gemini. No ejecutarlo para comprobar una integración ya activada: no se debe
+provocar una inferencia para seguir esperando el antiguo 503.
 
 `configure` sincroniza únicamente URL/clave pública con `local.properties` y exige confirmación de email.
 `android-smoke <serial>` es optativo: instala el APK y las pruebas en el emulador desechable autorizado,
@@ -129,11 +139,33 @@ la aceptación. El JSON en `app/build/verification/gemini/` omite fotos, rutas d
 explicaciones privadas, claves y tokens. Esa prueba de escritorio tampoco acredita UI Android.
 Sin secretos/consentimiento/revisión no se genera evidencia de inferencia aprobada.
 
+El gateway devuelve un `code` público permitido junto al mensaje: distingue cuota gratuita,
+acceso denegado, petición rechazada, indisponibilidad, tiempo agotado, bloqueo de seguridad,
+respuesta incompleta o inválida y cuota local. No expone el mensaje original del proveedor,
+fotografías, claves, identidad ni razonamiento del modelo. El asistente guarda los fallos
+tipados en `failure-*.json` con aceptación **false**, nunca como resultado aprobado.
+Un 503 `GEMINI_UNAVAILABLE` no prueba una clave incorrecta ni autoriza facturación.
+
+Para los modelos 3.x (3.8 inicial, **3.6 configurado actualmente**) se usa razonamiento `LOW`, límite de salida
+2048 y esquema JSON de etiquetas permitidas. Pensamiento y salida comparten presupuesto;
+se rechazan respuestas truncadas y se omiten partes de pensamiento. Esto corrige la
+política anterior, pero no demuestra que esa política causara el primer 503.
+No hay cambio silencioso de modelo, activación de pagos ni reintento automático.
+Referencias oficiales: [razonamiento](https://ai.google.dev/gemini-api/docs/thinking) y
+[modelo](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash).
+El cambio manual posterior a [3.6 Flash](https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash)
+se verificó con el listado real de modelos y su nivel gratuito publicado. Solo se modificó
+`GEMINI_MODEL` y la copia privada local correspondiente; no la clave.
+Una única llamada gateway con el JPEG sintético del repositorio devolvió clasificación
+válida. Su cuenta se eliminó. No es la aceptación de las cinco fotos ni del Android físico.
+
 Comprobaciones de herramientas sin credenciales ni inferencia:
 
 ```powershell
 python scripts/check-gemini.py --check-ui
 python -m unittest discover -s scripts -p 'test_*.py'
+node --experimental-strip-types --test scripts/test-ai-gateway.mjs
+npx --yes deno check supabase/functions/ai-gateway/index.ts supabase/functions/city-submit/index.ts supabase/functions/city-delete/index.ts supabase/functions/account-delete/index.ts
 ```
 
 El analizador de tiempos GPS está documentado en [ACEPTACION_FISICA.md](ACEPTACION_FISICA.md).
@@ -272,6 +304,16 @@ despliegue seguro al proyecto autorizado. Se admiten claves estándar y las nuev
 autorización; Google valida la clave, no se presupone el prefijo antiguo.
 No subir una captura de la clave ni enviarla por chat. Una clave expuesta debe revocarse y
 sustituirse. Cerrar la ventana sin completar no configura Gemini ni inventa respuestas.
+
+Si falla «Validar clave», el formulario distingue errores HTTP/permisos/clave de errores de
+red/TLS o del validador local. La consulta de modelos y el despliegue usan el mismo validador
+Python, con certificado verificado y clave enviada exclusivamente en la cabecera de Google.
+La comunicación del formulario con Python usa una tubería privada, nunca argumentos ni
+portapapeles. No se reproduce el texto libre de los errores de Google: solo identificadores
+permitidos y el estado HTTP. El último diagnóstico público queda en
+`supabase/.temp/gemini-validation.json`, sin clave, respuesta original ni cabeceras.
+No hace falta enviar capturas de AI Studio. Un error no autoriza habilitar facturación,
+desactivar la validación TLS o eliminar restricciones de seguridad indiscriminadamente.
 
 Crear `.env` local a partir de `.env.example` (ignorado por Git):
 

@@ -1,6 +1,6 @@
 # PaceFit AI — Lo implementado y lo pendiente
 
-**Fecha de corte:** 25/11/2026
+**Fecha de corte:** 27/11/2026
 
 **Versión del APK actual:** `0.3.0-beta.1` (código 3)
 
@@ -13,8 +13,13 @@ El APK local actual se probó de nuevo contra el servidor real en Android 8 y An
 24 pruebas aprobadas en cada API, con el mismo hash antes y después de las ejecuciones.
 Los últimos informes de unitarias y Lint registran 32 aprobadas y 0 errores/17 advertencias;
 no se volvieron a ejecutar en esta etapa ni se invocó otra compilación.
-**La entrega original todavía no está cerrada al 100 %:** faltan conectar y probar
-Gemini y completar la aceptación en teléfonos físicos, incluido el flujo de correo desde el APK.
+**La entrega original todavía no está cerrada al 100 %:** faltan probar Gemini con
+cinco fotos y completar la aceptación en teléfonos físicos, incluido el flujo de correo desde el APK.
+La clave/modelo Gemini ya se conectaron privadamente al servidor; se confirmó su presencia,
+sin leer o publicar sus valores. La prueba controlada posterior recibió de Google
+**HTTP 503 / `UNAVAILABLE`** con 3.8. Una alternativa manual **3.6 Flash** respondió
+correctamente a una imagen sintética; quedó configurada sin activar pagos.
+Eso no acredita las cinco fotos del usuario.
 La recepción real Gmail y la confirmación pública ya aprobaron mediante el asistente de escritorio.
 También aprobaron el respaldo cifrado de datos de aplicación y su ensayo de restauración
 aislada. Se instaló y ejecutó la tarea local diaria/de inicio de sesión para copiar y purgar.
@@ -74,8 +79,12 @@ físico. Los OTP administrativos de las instrumentadas no son la evidencia de es
 - [x] Puntos calculados por el servidor, sin confiar en los puntos enviados por el cliente.
 - [x] Resolución y eliminación de registros propios.
 - [x] Gateway de fotografía preparado para Gemini y cuota atómica de 40 llamadas por usuario/hora.
+- [x] Clave/modelo Gemini desplegados en el proyecto autorizado, confirmados el 27/11/2026.
+- [x] Gateway actualizado para el modelo configurado, esquema de respuesta y errores públicos seguros.
+- [x] Diferenciar cuota, permisos, indisponibilidad, tiempo agotado y respuesta incompleta, sin reintentos automáticos.
 
-**Límite:** el gateway y su cuota están implementados, pero todavía no se ha probado inferencia real.
+**Límite:** 3.8 respondió 503; 3.6 aprobó una inferencia real sintética. Se conserva la
+clasificación manual y las cinco fotografías del usuario siguen sin aprobarse.
 
 ### Herramientas de aceptación y respaldo
 
@@ -90,7 +99,8 @@ físico. Los OTP administrativos de las instrumentadas no son la evidencia de es
 - [x] Diario durable para recuperar solo cuentas temporales propias tras una interrupción.
 - [x] Asistente privado de cinco fotos para Gemini, con recomprensión sin EXIF y revisión manual.
 
-El asistente de IA está preparado, no probado con inferencias reales. La copia DPAPI es
+El asistente de IA registra fallos sin generar una aceptación falsa. No hay cinco inferencias
+aprobadas. La copia DPAPI es
 de aplicación, no Auth/PITR. La tarea ya está instalada/probada, pero necesita el equipo
 encendido y el usuario conectado; la recuperación integral no está aceptada.
 
@@ -107,7 +117,10 @@ encendido y el usuario conectado; la recuperación integral no está aceptada.
 | Comprobaciones HTTPS contra Supabase cloud | 27 aprobadas |
 | Firma del APK actual | V2 verificada, un firmante |
 | Correo real → OTP público → renovación/cierre → limpieza de prueba | Aprobado en el asistente de escritorio |
-| Herramientas Python de aceptación/mantenimiento | 63 aprobadas; IA/SMTP/HTTP con dobles, no campo real |
+| Herramientas Python de aceptación/mantenimiento | 80 aprobadas; IA/SMTP/HTTP con dobles, no campo real |
+| Política del gateway Gemini, Node/TypeScript | 12 aprobadas con Google simulado; tipos Deno aprobados en las cuatro funciones |
+| Publicación Ciudad con foto preexistente y repetición del identificador | Regresión HTTPS aprobada: foto intacta, una fila, puntos sin duplicar y limpieza propia |
+| Gemini con imagen sintética pública | Inferencia real aprobada en 3.6; 3.8 había respondido 503. No son cinco fotos reales del usuario |
 | Copia cifrada → cuenta borrada excluida → datos/foto restaurados aisladamente | Aprobado; no recuperación del proveedor/Auth |
 | Tarea diaria/logon → purga → captura completa cifrada | Aprobado; ejecución real y resultado Windows 0 |
 | Inventario del proveedor en Free | 0 respaldos disponibles; PITR desactivado, sin activar pagos |
@@ -125,12 +138,18 @@ Los OTP de prueba se generaron por administración para cuentas desechables: **n
 ### A. Conectar y comprobar Gemini
 
 - [ ] Revocar cualquier clave que se haya compartido en el chat y generar una **nueva**.
-- [ ] Introducirla únicamente en el formulario privado `scripts/configure-gemini.ps1`.
-- [ ] Confirmar uso gratuito, validar el modelo y pulsar **Guardar y conectar**.
-- [ ] Comprobar que los secretos quedaron desplegados en el proyecto autorizado.
+- [x] Introducir la clave únicamente en el formulario privado `scripts/configure-gemini.ps1`.
+- [x] Confirmar uso gratuito, validar el modelo y pulsar **Guardar y conectar**.
+- [x] Comprobar que los secretos quedaron desplegados en el proyecto autorizado.
 - [ ] Ejecutar una inferencia real y validar cinco fotografías consentidas, incluyendo corrección manual.
 
-**Bloqueo actual:** la última consulta no encontró clave ni modelo Gemini desplegados.
+**Pendiente actual:** ejecutar y revisar cinco inferencias con fotos consentidas.
+Tras el 503 de 3.8 se comprobó la disponibilidad/cuota gratuita de 3.6 y se seleccionó
+manualmente, sin cambiar la clave. Su única prueba sintética aprobó y la cuenta temporal
+se eliminó. No se reenviaron las fotos del usuario, activaron pagos ni programaron
+cambios de modelo o reintentos automáticos.
+La revocación de claves
+anteriores debe comprobarla el propietario en AI Studio; no se da por probada por esta conexión.
 No enviar claves por chat ni guardarlas en este documento, Git o el APK. No activar facturación.
 Asistente preparado: `python scripts/check-gemini.py`. Exige exactamente cinco fotos
 autorizadas y revisión antes de registrar éxito; no publica fotos ni fabrica respuestas.
@@ -213,7 +232,7 @@ Usar únicamente emuladores desechables sin datos personales para la instrumenta
 | PF-015 | Registros, fotos, publicación, mapa y puntos de servidor | Gemini real y fotografías reales |
 | PF-003, dependencia necesaria | Grabación FGS, pausa, rutas y sensores opcionales | Prueba física prolongada |
 | PF-010, dependencia necesaria | Auth/OTP Android; correo recibido y sesión probados en escritorio | Completar correo y sesión en teléfono físico |
-| PF-012, dependencia necesaria | Tarea de fotografía y cuota | Clave e inferencia; las otras tareas siguen en backlog |
+| PF-012, dependencia necesaria | Tarea de fotografía, cuota y configuración privada conectada | Inferencia real; las otras tareas siguen en backlog |
 
 No se consideran completados BLE, comidas, cálculos de salud, asesor semanal, chat,
 zonas competitivas, PDF ni módulos opcionales. No forman parte de esta entrega autorizada.

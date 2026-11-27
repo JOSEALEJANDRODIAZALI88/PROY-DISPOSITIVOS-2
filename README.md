@@ -33,7 +33,14 @@ Sus cuatro migraciones y cuatro Edge Functions ya están desplegadas; **27 compr
 contra el servidor cloud aprobaron**, con cuentas desechables propias.
 El APK ya está recompilado y probado contra ese servidor desde Android 8 y 15.
 La URL y clave pública están configuradas localmente, nunca la clave de servidor.
-**Pendientes: clave Gemini, inferencia real y aceptación en teléfonos físicos.**
+El **27/11/2026** se conectaron la clave y el modelo Gemini privadamente al servidor;
+su presencia se verificó sin mostrar valores.
+El gateway actualizado distingue errores seguros y valida respuestas estructuradas.
+La prueba controlada posterior recibió **503 `UNAVAILABLE` de Google**:
+3.8 no respondió. Se seleccionó manualmente **3.6 Flash**, disponible para la clave y
+compatible con cuota gratuita; una inferencia sintética real aprobó. La clave no cambió,
+no se activaron pagos ni se reenviaron automáticamente las fotos del usuario.
+**Pendientes: inferencia real con cinco fotos y aceptación en teléfonos físicos.**
 SMTP Gmail y la confirmación por código en Cuenta pasaron sus pruebas; además, el usuario recibió
 un correo real y completó OTP, renovación/cierre y limpieza de cuenta mediante el asistente
 de escritorio. Falta completar ese recorrido desde un teléfono físico.
@@ -127,7 +134,9 @@ Registro sin datos sensibles en `app/build/verification/email-delivery/`; client
 no una prueba de la UI Android en teléfono.
 Guía para el GPS y otras pruebas físicas: [`docs/ACEPTACION_FISICA.md`](docs/ACEPTACION_FISICA.md).
 
-Las herramientas posteriores aprobaron **63 pruebas Python** y un ensayo real de
+Las herramientas posteriores aprobaron **80 pruebas Python**, **12 pruebas Node del gateway**
+(Google simulado) y tipos Deno en las cuatro Edge Functions. La regresión HTTPS de Ciudad
+comprobó foto preexistente intacta, publicación idempotente y puntos sin duplicar. También aprobaron un ensayo real de
 respaldo cifrado/restauración de aplicación en PostgreSQL aislado, excluyendo una
 cuenta realmente eliminada. La tarea limitada del usuario actual está instalada
 (03:00 + inicio de sesión) y aprobó una captura completa/purga real, resultado Windows 0.

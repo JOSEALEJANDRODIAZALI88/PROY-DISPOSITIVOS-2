@@ -5,7 +5,7 @@ export const headers = { "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS", "Content-Type": "application/json" };
 export const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers });
 export class ApiError extends Error {
-  constructor(public status: number, message: string) { super(message); }
+  constructor(public status: number, message: string, public code?: string) { super(message); }
 }
 export function endpoint(handler: (req: Request) => Promise<Response>) {
   return async (req: Request) => {
@@ -14,7 +14,8 @@ export function endpoint(handler: (req: Request) => Promise<Response>) {
     try { return await handler(req); }
     catch (e) {
       // Never log JWTs, emails, photos, coordinates or request bodies.
-      return json({ ok: false, error: e instanceof ApiError ? e.message : "No se pudo completar la operación" },
+      return json({ ok: false, error: e instanceof ApiError ? e.message : "No se pudo completar la operación",
+        ...(e instanceof ApiError && e.code && /^[A-Z][A-Z0-9_]{0,63}$/.test(e.code) ? { code: e.code } : {}) },
         e instanceof ApiError ? e.status : 500);
     }
   };

@@ -62,6 +62,60 @@ $form.Controls.AddRange(@($instructions, $field, $free, $validate, $modelLabel, 
 $script:validatedKey = $null
 $script:savedHere = $false
 
+function Invoke-PrivateGeminiValidation([string]$PrivateKey) {
+    $process = $null
+    try {
+        # The key crosses a private pipe, never arguments, clipboard reads or a key file.
+        $start = New-Object Diagnostics.ProcessStartInfo
+        $start.FileName = 'python'
+        $start.Arguments = '"' + (Join-Path $PSScriptRoot 'gemini_validation.py') + '"'
+        $start.WorkingDirectory = $root
+        $start.UseShellExecute = $false
+        $start.CreateNoWindow = $true
+        $start.RedirectStandardInput = $true
+        $start.RedirectStandardOutput = $true
+        $start.RedirectStandardError = $true
+        $process = New-Object Diagnostics.Process
+        $process.StartInfo = $start
+        [void]$process.Start()
+        $process.StandardInput.WriteLine((@{ apiKey = $PrivateKey } | ConvertTo-Json -Compress))
+        $process.StandardInput.Close()
+        if (-not $process.WaitForExit(45000)) {
+            $process.Kill()
+            return [pscustomobject]@{ ok = $false; code = 'VALIDATOR_TIMEOUT' }
+        }
+        if ($process.ExitCode -ne 0) {
+            return [pscustomobject]@{ ok = $false; code = 'LOCAL_VALIDATION_ERROR' }
+        }
+        return ($process.StandardOutput.ReadToEnd() | ConvertFrom-Json)
+    } catch {
+        return [pscustomobject]@{ ok = $false; code = 'LOCAL_VALIDATION_ERROR' }
+    } finally {
+        $PrivateKey = $null
+        if ($null -ne $process) { $process.Dispose() }
+    }
+}
+
+function Write-PublicGeminiDiagnostic($Result) {
+    # Do not persist the private request, key, provider message, headers or metadata.
+    $record = @{
+        operation = 'Google model list; no inference'
+        recordedAt = [DateTime]::UtcNow.ToString('o')
+        ok = [bool]$Result.ok
+    }
+    if ($Result.code) { $record.code = [string]$Result.code }
+    if ($Result.httpStatus) { $record.httpStatus = [int]$Result.httpStatus }
+    if ($Result.googleStatus) { $record.googleStatus = [string]$Result.googleStatus }
+    try {
+        $directory = Join-Path $root 'supabase\.temp'
+        [void][IO.Directory]::CreateDirectory($directory)
+        [IO.File]::WriteAllText((Join-Path $directory 'gemini-validation.json'),
+            ($record | ConvertTo-Json -Compress), [Text.UTF8Encoding]::new($false))
+    } catch {
+        # Optional public diagnostics must not break validation or disclose an exception.
+    }
+}
+
 $field.Add_TextChanged({
     $script:validatedKey = $null
     $save.Enabled = $false
@@ -89,32 +143,43 @@ $validate.Add_Click({
     $status.Text = 'Comprobando con Google por HTTPS. No se esta generando contenido...'
     $form.Refresh()
     try {
-        $models = Invoke-RestMethod -Uri 'https://generativelanguage.googleapis.com/v1beta/models' `
-            -Headers @{ 'x-goog-api-key' = $key } -Method Get -TimeoutSec 30
-        $candidates = @($models.models | Where-Object {
-            $_.name -match '^models/gemini-\d+(\.\d+)?-flash$' -and
-            $_.supportedGenerationMethods -contains 'generateContent'
-        } | Sort-Object -Property @{
-            Expression = {
-                $version = ($_.name -replace '^models/gemini-', '') -replace '-flash$', ''
-                if ($version -notmatch '\.') { $version += '.0' }
-                [version]$version
+        # Use the same certificate-verified validator as server-secret deployment.
+        $result = Invoke-PrivateGeminiValidation $key
+        Write-PublicGeminiDiagnostic $result
+        if (-not $result.ok) {
+            $advice = switch ($result.code) {
+                'INVALID_KEY_FORMAT' { 'Pega la clave completa, sin espacios.' }
+                'KEY_REPORTED_LEAKED' { 'Google marca esta clave como filtrada. Revocala y crea otra.' }
+                'API_KEY_INVALID' { 'Google no reconoce la clave. Copia una nueva desde AI Studio.' }
+                'API_KEY_EXPIRED' { 'La clave caduco. Crea otra en AI Studio.' }
+                'SERVICE_DISABLED' { 'La API Generative Language no esta habilitada en ese proyecto. No actives pagos.' }
+                'API_KEY_SERVICE_BLOCKED' { 'La clave no permite la API Generative Language. Revisa sus permisos.' }
+                'API_KEY_HTTP_REFERRER_BLOCKED' { 'Las restricciones web no permiten este cliente de servidor.' }
+                'API_KEY_IP_ADDRESS_BLOCKED' { 'Las restricciones de IP no permiten este cliente.' }
+                'ACCESS_TOKEN_SCOPE_INSUFFICIENT' { 'La cuenta asociada no tiene permisos suficientes.' }
+                'IAM_PERMISSION_DENIED' { 'Revisa los permisos de la cuenta asociada a la clave.' }
+                'BILLING_DISABLED' { 'No actives pagos. Revisa la elegibilidad del nivel gratuito.' }
+                'NO_COMPATIBLE_FLASH_MODEL' { 'Google acepto la consulta, pero no aparecen modelos Flash estables compatibles.' }
+                'NETWORK_TLS_OR_TIMEOUT' { 'No se pudo completar HTTPS. Revisa conexion, certificado o proxy.' }
+                'VALIDATOR_TIMEOUT' { 'Se agoto el tiempo de conexion. Revisa la red.' }
+                'LOCAL_VALIDATION_ERROR' { 'Fallo el validador local. Revisa que Python este disponible.' }
+                'INVALID_PROVIDER_RESPONSE' { 'La respuesta no tiene el formato esperado.' }
+                default { 'Revisa la clave, permisos y elegibilidad gratuita en AI Studio. No actives pagos.' }
             }
-            Descending = $true
-        })
-        if ($candidates.Count -eq 0) {
-            $status.Text = 'No aparecen modelos Flash estables compatibles. No se guardo la clave ni se activo un plan.'
+            $diagnostic = [string]$result.code
+            if ($result.httpStatus) { $diagnostic += ' HTTP ' + [int]$result.httpStatus }
+            if ($result.googleStatus) { $diagnostic += ' ' + [string]$result.googleStatus }
+            $status.Text = "$diagnostic. $advice No se guardo la clave."
             return
         }
-        foreach ($candidate in $candidates) { [void]$modelsBox.Items.Add($candidate.name -replace '^models/', '') }
+        foreach ($candidate in $result.models) { [void]$modelsBox.Items.Add([string]$candidate) }
         $modelsBox.SelectedIndex = 0
         $modelsBox.Enabled = $true
         $script:validatedKey = $key
         $save.Enabled = $true
         $status.Text = 'Clave aceptada por Google. Elige un modelo con cuota gratuita. Aun no se ha guardado.'
     } catch {
-        # Never echo provider responses: they can contain request or credential details.
-        $status.Text = 'Google no acepto la consulta. Revisa la clave nueva, permisos o conexion. No se guardo ni mostro la clave.'
+        $status.Text = 'Fallo el validador local. No se guardo la clave. Avisa sin enviar secretos.'
     } finally {
         $key = $null
         $validate.Enabled = $true
@@ -165,8 +230,10 @@ $save.Add_Click({
 if ($CheckUi) {
     if (-not $field.UseSystemPasswordChar -or -not $field.ShortcutsEnabled) { throw 'Unsafe key entry control.' }
     if ($form.Controls.Count -ne 9 -or $save.Enabled) { throw 'Invalid initial UI state.' }
+    $bridge = Invoke-PrivateGeminiValidation 'not-a-valid-key'
+    if ($bridge.ok -or $bridge.code -ne 'INVALID_KEY_FORMAT') { throw 'Private validation bridge failed.' }
     $form.Dispose()
-    Write-Output 'Private Gemini dialog controls OK; no clipboard access, key, network call or file write.'
+    Write-Output 'Private Gemini dialog controls and stdin bridge OK; no clipboard access, real key, network call or file write.'
     exit 0
 }
 try { [void]$form.ShowDialog() }

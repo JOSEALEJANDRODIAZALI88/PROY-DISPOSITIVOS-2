@@ -110,6 +110,9 @@ def configure():
 
 
 def smoke():
+    names = {row.get("name") for row in management("GET", f"/v1/projects/{REF}/secrets")}
+    if names.intersection(("GEMINI_API_KEY", "GEMINI_MODEL")):
+        raise RuntimeError("This legacy check expects unconfigured AI. Stopped before any inference; use the private consented-photo check.")
     anonymous, service = keys()
     environment = os.environ.copy()
     environment.update(PACEFIT_CLOUD_TEST_REF=REF, PACEFIT_CLOUD_URL=BASE,
@@ -183,16 +186,13 @@ def deploy_gemini():
         raise RuntimeError("Private Gemini key is missing or invalid; no secrets changed.")
     if not re.fullmatch(r"gemini-\d+(?:\.\d+)?-flash", values.get("GEMINI_MODEL", "")):
         raise RuntimeError("Select an available stable Flash model in the private setup.")
-    # Validate opaque key formats with the intended provider, never by sending a key in a URL.
-    request = urllib.request.Request("https://generativelanguage.googleapis.com/v1beta/models",
-                                     headers={"x-goog-api-key": values["GEMINI_API_KEY"]})
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            models = json.load(response).get("models", [])
-    except Exception:
-        raise RuntimeError("Google could not validate the private key/model; no secrets changed.") from None
-    if not any(row.get("name") == "models/" + values["GEMINI_MODEL"]
-               and "generateContent" in row.get("supportedGenerationMethods", []) for row in models):
+    from gemini_validation import inspect_models
+    result = inspect_models(values["GEMINI_API_KEY"])
+    if not result["ok"]:
+        # Only fixed diagnostic identifiers escape; never provider messages or key values.
+        status = result.get("httpStatus", "none")
+        raise RuntimeError(f"Google validation: {result['code']} (HTTP {status}); no secrets changed.")
+    if values["GEMINI_MODEL"] not in result["models"]:
         raise RuntimeError("Selected model is unavailable for this key; no secrets changed.")
     management("POST", f"/v1/projects/{REF}/secrets",
                [{"name": key, "value": values[key]} for key in ("GEMINI_API_KEY", "GEMINI_MODEL")])

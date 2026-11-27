@@ -73,7 +73,9 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
 
 ### Integración autorizada `0.3.0-beta.1` — 25/11/2026
 
-- Herramientas de aceptación/mantenimiento: 63 pruebas Python aprobadas, analizador privado de tiempos GPS,
+- Herramientas de aceptación/mantenimiento: 80 pruebas Python aprobadas y 12 Node del gateway
+  con Google simulado; tipos Deno aprobados en las cuatro funciones y regresión HTTPS de Ciudad
+  con foto preexistente, identificador repetido y puntos sin duplicar. Analizador privado de tiempos GPS,
   diario durable de cuentas temporales y asistente consentido de cinco fotos Gemini.
   Ensayo de respaldo de aplicación DPAPI/restauración PostgreSQL aislada aprobado:
   excluye la cuenta eliminada, restaura foto/uso/cuota y recalcula puntos.
@@ -103,8 +105,16 @@ Esto no cierra los requisitos remotos, la aceptación manual completa ni las pru
   Evidencia vigente en `docs/VERIFICACION.md`.
 - SMTP Gmail configurado y plantilla OTP desplegada, manteniendo confirmación obligatoria.
   La prueba Android rechaza un OTP incorrecto y verifica uno de Auth, sin enviar correo.
-  Todavía no se ha desplegado una clave Gemini según la última consulta. No se afirma
-  inferencia real, retención de backups operativa ni pruebas de campo.
+  El 27/11 se confirmó la clave/modelo Gemini desplegados, sin leer ni publicar sus valores.
+  Se desplegó la corrección del gateway: esquema JSON, presupuesto de salida/razonamiento
+  apropiado al modelo y errores permitidos sin datos privados ni reintentos automáticos.
+  Una llamada real controlada recibió de Google HTTP 503 `UNAVAILABLE`; no se marca
+  esa llamada como exitosa. Después se seleccionó manualmente el modelo 3.6 Flash
+  disponible/con cuota gratuita; una inferencia sintética real aprobó y se eliminó
+  su cuenta propia. No se cambiaron claves, activaron pagos ni reenviaron fotos del usuario.
+  Las cinco fotos siguen pendientes. La clasificación manual continúa disponible.
+  No se afirman pruebas de campo; la operación local de respaldos
+  aprobada arriba no acredita recuperación integral del proveedor.
   Las cuentas de estas pruebas usan códigos generados por administración y verificados por el cliente,
   no códigos recibidos en Gmail.
   El primer mensaje se reportó como no recibido. Se corrigió el asistente y pasaron 13 pruebas
